@@ -27,6 +27,31 @@ def test_security_headers_and_local_assets_are_served(client, app):
     assert client.get('/static/images/campuspulse-logo.png').status_code == 200
 
 
+def test_seo_routes_and_private_page_protection(client):
+    robots = client.get('/robots.txt')
+    assert robots.status_code == 200
+    assert robots.mimetype == 'text/plain'
+    assert 'Sitemap:' in robots.get_data(as_text=True)
+
+    sitemap = client.get('/sitemap.xml')
+    assert sitemap.status_code == 200
+    assert sitemap.mimetype == 'application/xml'
+    sitemap_body = sitemap.get_data(as_text=True)
+    assert '<urlset' in sitemap_body
+    assert '/how-to-use' in sitemap_body
+    assert '/contact' in sitemap_body
+
+    public_response = client.get('/')
+    public_body = public_response.get_data(as_text=True)
+    assert 'name="description"' in public_body
+    assert 'rel="canonical"' in public_body
+    assert 'index, follow' in public_body
+
+    private_response = client.get('/login')
+    assert 'noindex, nofollow' in private_response.get_data(as_text=True)
+    assert private_response.headers['X-Robots-Tag'] == 'noindex, nofollow'
+
+
 def test_public_pages_use_the_campus_theme_shell(client):
     response = client.get('/login')
     assert response.status_code == 200

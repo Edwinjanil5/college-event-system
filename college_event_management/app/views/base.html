@@ -4,6 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% set public_page = request.path in ['/', '/how-to-use', '/contact'] %}
+    {% if public_page %}
+      <meta name="description" content="CampusPulse is a college event management platform for student registration, organizer submissions, HoD review, approvals, feedback, PA points, and reports.">
+      <meta name="robots" content="index, follow, max-image-preview:large">
+      <link rel="canonical" href="{{ request.base_url }}">
+      <meta property="og:type" content="website">
+      <meta property="og:site_name" content="CampusPulse">
+      <meta property="og:title" content="CampusPulse | College Event Management">
+      <meta property="og:description" content="Plan college events, connect students, and measure participation with CampusPulse.">
+      <meta property="og:url" content="{{ request.base_url }}">
+      <meta property="og:image" content="{{ url_for('static', filename='images/campuspulse-logo.png', _external=True) }}">
+      <meta name="twitter:card" content="summary">
+    {% else %}
+      <meta name="robots" content="noindex, nofollow">
+    {% endif %}
+    {% if config.get('GOOGLE_SITE_VERIFICATION') %}
+      <meta name="google-site-verification" content="{{ config.GOOGLE_SITE_VERIFICATION }}">
+    {% endif %}
     <title>{% if request.path == '/' %}CampusPulse | College Event Management{% elif request.path == '/how-to-use' %}How-To-Use | CampusPulse{% elif request.path == '/contact' %}Support | CampusPulse{% elif request.path == '/login' %}Login | CampusPulse{% elif request.path == '/register' %}Register | CampusPulse{% elif request.path == '/admin/login' %}Admin Login | CampusPulse{% else %}CampusPulse | College Event Management{% endif %}</title>
     <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='theme-20260925') }}">

@@ -3,7 +3,7 @@ import re
 from datetime import timedelta
 
 import click
-from flask import Flask, redirect, render_template, session, url_for
+from flask import Flask, Response, make_response, redirect, render_template, request, session, url_for
 from flask_bcrypt import Bcrypt, generate_password_hash
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -12,6 +12,13 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from app.models import User, db
 from app.workflow import current_academic_year
 from config.settings import Config
+
+
+PUBLIC_INDEXABLE_PATHS = frozenset({'/', '/how-to-use', '/contact'})
+SITE_DESCRIPTION = (
+    'CampusPulse is a college event management platform for student registration, '
+    'organizer submissions, HoD review, approvals, feedback, PA points, and reports.'
+)
 
 
 login_manager = LoginManager()
@@ -188,6 +195,8 @@ def create_app(test_config=None):
     def add_security_headers(response):
         response.headers.setdefault('X-Content-Type-Options', 'nosniff')
         response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+        if request.path not in PUBLIC_INDEXABLE_PATHS:
+            response.headers.setdefault('X-Robots-Tag', 'noindex, nofollow')
         response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
         response.headers.setdefault(
             'Content-Security-Policy',
@@ -208,6 +217,47 @@ def create_app(test_config=None):
     @app.route('/contact')
     def contact():
         return render_template('contact.html')
+
+    @app.get('/sitemap.xml')
+    def sitemap():
+        public_urls = [
+            url_for('landing_page', _external=True),
+            url_for('how_to_use', _external=True),
+            url_for('contact', _external=True),
+        ]
+        entries = ''.join(
+            f'<url><loc>{page_url}</loc></url>' for page_url in public_urls
+        )
+        body = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            f'{entries}</urlset>'
+        )
+        return Response(body, mimetype='application/xml')
+
+    @app.get('/robots.txt')
+    def robots():
+        sitemap_url = url_for('sitemap', _external=True)
+        body = '\n'.join(
+            [
+                'User-agent: *',
+                'Allow: /',
+                'Disallow: /login',
+                'Disallow: /register',
+                'Disallow: /admin',
+                'Disallow: /hod',
+                'Disallow: /organizer',
+                'Disallow: /student',
+                'Disallow: /reports',
+                'Disallow: /assistant',
+                'Disallow: /health',
+                f'Sitemap: {sitemap_url}',
+                '',
+            ]
+        )
+        response = make_response(body)
+        response.mimetype = 'text/plain'
+        return response
 
     @app.route('/health')
     def health_check():

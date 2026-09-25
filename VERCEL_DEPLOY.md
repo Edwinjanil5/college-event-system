@@ -6,6 +6,7 @@ Vercel can run the CampusPulse Flask application as a Python Web Function. The r
 - `requirements.txt` — runtime dependencies
 - `vercel.json` — Flask function configuration
 - `.python-version` — Python 3.12
+- `public/static/**` — CDN-served CSS, JavaScript, Bootstrap, and images for Vercel
 
 ## Important limitation
 
@@ -66,7 +67,35 @@ SECRET_KEY=the-generated-value
 
 Never put `SECRET_KEY`, passwords, or service credentials in GitHub.
 
-## 4. After deployment
+## 4. SEO and Google Search Console
+
+The app now provides:
+
+- `index, follow` metadata for `/`, `/how-to-use`, and `/contact`
+- `noindex, nofollow` protection for login, dashboards, Admin, HoD, reports, assistant, and health routes
+- `robots.txt` with the sitemap location
+- `sitemap.xml` containing the three public pages
+- Open Graph and page-description metadata
+- An optional `GOOGLE_SITE_VERIFICATION` environment variable
+
+After the Vercel URL is live:
+
+1. Open [Google Search Console](https://search.google.com/search-console).
+2. Add a **URL prefix** property for the Vercel domain.
+3. Verify ownership using the HTML meta-tag method.
+4. Put the verification token in Vercel as:
+
+   ```text
+   GOOGLE_SITE_VERIFICATION=the-token-from-search-console
+   ```
+
+5. Redeploy the project.
+6. Submit `https://YOUR-VERCEL-DOMAIN/sitemap.xml` in Search Console.
+7. Use **URL Inspection → Request indexing** for the homepage, `/how-to-use`, and `/contact`.
+
+Google may take days or weeks to crawl a new domain. SEO metadata makes the pages eligible; it does not guarantee a search position or result.
+
+## 5. After deployment
 
 Vercel will provide a URL similar to:
 

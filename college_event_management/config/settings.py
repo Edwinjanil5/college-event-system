@@ -53,3 +53,4 @@ class Config:
     SUPPORT_ROLE = os.getenv('SUPPORT_ROLE', 'Developer')
     SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'edwinjanil5@gmail.com')
     SUPPORT_PHONE = os.getenv('SUPPORT_PHONE', '8138815144')
+    GOOGLE_SITE_VERIFICATION = os.getenv('GOOGLE_SITE_VERIFICATION', '')
