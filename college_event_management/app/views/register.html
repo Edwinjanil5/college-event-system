@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h2 class="text-center text-primary mb-4">Create Your Account</h2>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label for="name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ name or '' }}" required>
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}" required>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="password" name="password" required>
+              <button type="button" class="btn btn-outline-secondary" data-toggle-password data-target="password">Show</button>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="role" class="form-label">Role</label>
+            <select class="form-select" id="role" name="role">
+              <option value="student" selected>Student</option>
+              <option value="organizer">Organizer</option>
+            </select>
+          </div>
+          <div class="alert alert-info py-2 small">
+            HoD accounts are created by an administrator and cannot be self-registered here.
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Register</button>
+        </form>
+        <p class="text-center mt-3 mb-0">Already registered? <a href="{{ url_for('auth.login') }}">Login here</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

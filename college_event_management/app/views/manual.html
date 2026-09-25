@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="manual-page">
+  <div class="page-heading d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-uppercase small fw-semibold text-primary mb-1">User guide</p>
+      <h1 class="mb-0">How to Use CampusPulse</h1>
+    </div>
+    <a href="{{ url_for('landing_page') }}" class="btn btn-outline-primary">Back to Home</a>
+  </div>
+
+  <div class="alert alert-info border-0 shadow-sm">
+    This manual walks you through the full flow for students, organizers, HoD reviewers, and administrators using the event management system.
+  </div>
+
+  <section class="manual-step">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <span class="step-number">01</span>
+        <h3>Open the home page and create an account</h3>
+        <p>On the welcome page, you can explore the platform and choose the action you need.</p>
+        <ul>
+          <li>Click <strong>Login</strong> if you already have an account.</li>
+          <li>Click <strong>Create Account</strong> to register as a student or organizer.</li>
+          <li>Use the admin portal only for the predefined admin dashboard.</li>
+        </ul>
+      </div>
+      <div class="col-lg-7">
+        <div class="manual-screenshot">
+          <div class="mock-window">
+            <div class="mock-toolbar">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="mock-nav">
+              <div class="brand">CampusPulse</div>
+              <div class="nav-actions">
+                <span>Login</span>
+                <span>Create Account</span>
+              </div>
+            </div>
+            <div class="mock-hero">
+              <div class="mock-copy">
+                <div class="tag">CampusPulse</div>
+                <h4>Empowering College Events, Student Participation & PA Points</h4>
+                <div class="btn-row">
+                  <div class="mock-btn primary">Login</div>
+                  <div class="mock-btn dark">Admin Login</div>
+                  <div class="mock-btn light">Create Account</div>
+                </div>
+              </div>
+              <div class="mock-panel">
+                <div class="panel-icon">🎓</div>
+                <div class="panel-title">Campus Events, Simplified</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="manual-step">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <span class="step-number">02</span>
+        <h3>Create your student or organizer profile</h3>
+        <p>Complete the registration form with your full name, email address, and a valid password.</p>
+        <ul>
+          <li>Only <strong>Student</strong> and <strong>Organizer</strong> roles are available during signup.</li>
+          <li>Email addresses must be unique. Duplicate emails will be rejected.</li>
+          <li>Use a password with at least 8 characters for stronger protection.</li>
+        </ul>
+      </div>
+      <div class="col-lg-7">
+        <div class="manual-screenshot compact">
+          <div class="mock-form">
+            <div class="form-header">Create Your Account</div>
+            <div class="field"><span>Full Name</span><div class="line short"></div></div>
+            <div class="field"><span>Email</span><div class="line long"></div></div>
+            <div class="field"><span>Password</span><div class="line long"></div></div>
+            <div class="field"><span>Role</span><div class="line medium"></div></div>
+            <div class="submit-block"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="manual-step">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <span class="step-number">03</span>
+        <h3>Log in to your account</h3>
+        <p>Use the standard login page for student, organizer, and provisioned HoD accounts.</p>
+        <ul>
+          <li>Enter your registered email and password.</li>
+          <li>Use the <strong>Show</strong> toggle to view your password.</li>
+          <li>If you forgot your password, use the <strong>Forgot Password?</strong> link.</li>
+        </ul>
+      </div>
+      <div class="col-lg-7">
+        <div class="manual-screenshot compact">
+          <div class="mock-form login-form">
+            <div class="form-header">Welcome Back</div>
+            <div class="field"><span>Email</span><div class="line long"></div></div>
+            <div class="field"><span>Password</span><div class="line long"></div></div>
+            <div class="inline-row"><span>Forgot Password?</span></div>
+            <div class="submit-block login-submit"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="manual-step">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <span class="step-number">04</span>
+        <h3>Student workflow</h3>
+        <p>Students can explore approved, upcoming events and register before the deadline.</p>
+        <ul>
+          <li>Open the student dashboard to see available events.</li>
+          <li>Register only for approved events with available seats.</li>
+          <li>Cancel your registration before the registration deadline.</li>
+          <li>After an event is marked completed, registered students can submit one rating from 1 to 5 and optional comments.</li>
+        </ul>
+      </div>
+      <div class="col-lg-7">
+        <div class="manual-screenshot">
+          <div class="mock-dashboard">
+            <div class="dashboard-header">
+              <div class="header-title">Student Dashboard</div>
+              <div class="header-pill">Approved Events</div>
+            </div>
+            <div class="dashboard-grid">
+              <div class="mini-card">
+                <h6>Campus Fest</h6>
+                <p>Approved</p>
+                <div class="mini-btn">Register</div>
+              </div>
+              <div class="mini-card">
+                <h6>Tech Expo</h6>
+                <p>Approved</p>
+                <div class="mini-btn">Register</div>
+              </div>
+              <div class="mini-card">
+                <h6>Career Talk</h6>
+                <p>Completed</p>
+                <div class="mini-btn alt">Feedback</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="manual-step">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <span class="step-number">05</span>
+        <h3>Organizer workflow</h3>
+        <p>Organizers create events and manage the lifecycle from submission to completion.</p>
+        <ul>
+          <li>Create a new event with title, venue, date, and participant limit.</li>
+          <li>Submit the event for HoD verification; after the HoD forwards it, the administrator gives final approval.</li>
+          <li>Use the Organizer profile card to select whether you are a class incharge.</li>
+          <li>Once the event date has passed, mark the approved event as completed to unlock feedback collection.</li>
+        </ul>
+      </div>
+      <div class="col-lg-7">
+        <div class="manual-screenshot">
+          <div class="mock-dashboard ">
+            <div class="dashboard-header">
+              <div class="header-title">Organizer Dashboard</div>
+              <div class="header-pill success">HoD Review</div>
+            </div>
+            <div class="dashboard-table">
+              <div class="row-line heading">
+                <span>Event</span><span>Status</span><span>Action</span>
+              </div>
+              <div class="row-line">
+                <span>Hackathon</span><span>Awaiting HoD</span><span>View</span>
+              </div>
+              <div class="row-line">
+                <span>Innovation Day</span><span>Sent to admin</span><span>View</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="manual-step">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <span class="step-number">06</span>
+        <h3>HoD verification workflow</h3>
+        <p>The Head of the Department verifies organizer-submitted programs before they reach the administrator.</p>
+        <ul>
+          <li>Open the HoD Dashboard and review the title, description, venue, schedule, capacity, fee, and organizer details.</li>
+          <li>Choose <strong>Verify &amp; send to admin</strong> when the program details are correct.</li>
+          <li>Choose <strong>Reject</strong> when the program needs correction and should not proceed.</li>
+        </ul>
+      </div>
+      <div class="col-lg-7">
+        <div class="manual-screenshot">
+          <div class="mock-dashboard">
+            <div class="dashboard-header">
+              <div class="header-title">HoD Dashboard</div>
+              <div class="header-pill success">Department Review</div>
+            </div>
+            <div class="dashboard-table">
+              <div class="row-line heading">
+                <span>Program</span><span>Status</span><span>Action</span>
+              </div>
+              <div class="row-line">
+                <span>Research Expo</span><span>Awaiting HoD</span><span>Verify</span>
+              </div>
+              <div class="row-line">
+                <span>Innovation Day</span><span>Sent to admin</span><span>View</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="manual-step">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <span class="step-number">07</span>
+        <h3>Admin workflow</h3>
+        <p>Administrators provide final approval for HoD-verified programs, calculate PA points, and export reports.</p>
+        <ul>
+          <li>Use the separate admin login page at <strong>/admin/login</strong>.</li>
+          <li>Approve or reject programs that the HoD has verified and forwarded.</li>
+          <li>Calculate PA points after events complete and generate PDF or Excel reports.</li>
+        </ul>
+      </div>
+      <div class="col-lg-7">
+        <div class="manual-screenshot">
+          <div class="mock-dashboard">
+            <div class="dashboard-header">
+              <div class="header-title">Admin Dashboard</div>
+              <div class="header-pill dark">Review Panel</div>
+            </div>
+            <div class="dashboard-table">
+              <div class="row-line heading">
+                <span>Event</span><span>Approval</span><span>PA</span>
+              </div>
+              <div class="row-line">
+                <span>Leadership Summit</span><span>Approve</span><span>Calculate</span>
+              </div>
+              <div class="row-line">
+                <span>Research Expo</span><span>Reject</span><span>Export</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="manual-step">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <span class="step-number">08</span>
+        <h3>Export reports and review results</h3>
+        <p>Once events are completed, the admin can export records for academic evaluation.</p>
+        <ul>
+          <li>Generate a PDF summary report with the academic year and event data.</li>
+          <li>Export an Excel workbook with the full scoring and totals.</li>
+          <li>Use these reports to track productivity, event outcomes, and PA point allocation.</li>
+        </ul>
+      </div>
+      <div class="col-lg-7">
+        <div class="manual-screenshot compact">
+          <div class="mock-report-box">
+            <div class="report-header">PA Summary Report</div>
+            <div class="report-row"><span>Academic Year</span><strong>2026-2027</strong></div>
+            <div class="report-row"><span>Total Events</span><strong>12</strong></div>
+            <div class="report-row"><span>Total PA Points</span><strong>240</strong></div>
+            <div class="report-actions">
+              <span>PDF</span>
+              <span>Excel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="manual-footer mt-4">
+    <h4>Quick tips</h4>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="tip-box">
+          <strong>Use unique emails</strong>
+          <p>Duplicate emails are not allowed so each account stays secure and traceable.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="tip-box">
+          <strong>Protect your password</strong>
+          <p>Passwords are hashed with bcrypt and the app uses protected forms and session handling.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="tip-box">
+          <strong>Follow deadlines</strong>
+          <p>Students must register before the deadline and organizers should complete events on time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

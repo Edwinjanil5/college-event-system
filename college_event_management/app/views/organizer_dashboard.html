@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1 text-primary">Organizer Dashboard</h2>
+    <p class="text-secondary mb-0">Submit new events and manage their status.</p>
+    <span class="badge mt-2 {% if current_user.is_class_incharge %}bg-success{% else %}bg-secondary{% endif %}">
+      {{ 'Class incharge' if current_user.is_class_incharge else 'Regular organizer' }}
+    </span>
+  </div>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newEventModal">Add Event</button>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div>
+      <h3 class="h5 mb-1">Organizer profile</h3>
+      <p class="text-muted mb-md-0">Tell CampusPulse whether you organize events as a class incharge.</p>
+    </div>
+    <form method="post" action="{{ url_for('organizer.update_class_incharge_status') }}" class="d-flex align-items-center gap-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="form-label mb-0 text-nowrap" for="classInchargeStatus">Class incharge?</label>
+      <select class="form-select" id="classInchargeStatus" name="class_incharge_status" style="min-width: 9rem;">
+        <option value="no" {% if not current_user.is_class_incharge %}selected{% endif %}>No</option>
+        <option value="yes" {% if current_user.is_class_incharge %}selected{% endif %}>Yes</option>
+      </select>
+      <button type="submit" class="btn btn-outline-primary">Save</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><h6 class="text-muted text-uppercase">Awaiting HoD</h6><h3>{{ counts.pending_hod }}</h3></div></div></div>
+  <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><h6 class="text-muted text-uppercase">Sent to admin</h6><h3>{{ counts.hod_approved }}</h3></div></div></div>
+  <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><h6 class="text-muted text-uppercase">Approved</h6><h3>{{ counts.approved }}</h3></div></div></div>
+  <div class="col-md-3"><div class="card shadow-sm border-0"><div class="card-body"><h6 class="text-muted text-uppercase">Completed</h6><h3>{{ counts.completed }}</h3></div></div></div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead class="table-primary">
+        <tr>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Venue</th>
+          <th>Fee</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+        <tr>
+          <td>{{ event.title }}</td>
+          <td><span class="badge bg-secondary">{{ event.status }}</span></td>
+          <td>{{ event.venue }}</td>
+          <td>
+            {% if event.ticket_fee and event.ticket_fee > 0 %}
+              ₹{{ '%.2f'|format(event.ticket_fee) }}
+            {% else %}
+              Free
+            {% endif %}
+          </td>
+          <td>
+            {% if event.status == 'approved' %}
+              <form method="post" action="{{ url_for('organizer.mark_event_completed', event_id=event.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-success btn-sm">Mark Complete</button>
+              </form>
+            {% else %}
+              {% if event.status == 'pending_hod' %}
+                 <span class="text-muted">Awaiting HoD verification</span>
+               {% elif event.status == 'hod_approved' %}
+                 <span class="text-muted">Sent to admin for final approval</span>
+               {% elif event.status == 'rejected' %}
+                 <span class="text-danger">Rejected</span>
+               {% elif event.status == 'completed' %}
+                 <span class="text-secondary">Completed</span>
+               {% else %}
+                 <span class="text-muted">Awaiting review</span>
+               {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="newEventModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('organizer.create_event') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Event</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" name="title" required></div>
+          <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" name="description"></textarea></div>
+          <div class="mb-3"><label class="form-label">Venue</label><input type="text" class="form-control" name="venue" required></div>
+          <div class="mb-3"><label class="form-label">Event Date</label><input type="datetime-local" class="form-control" name="event_date" required></div>
+          <div class="mb-3"><label class="form-label">Registration Deadline</label><input type="datetime-local" class="form-control" name="registration_deadline" required></div>
+          <div class="mb-3"><label class="form-label">Maximum Participants</label><input type="number" class="form-control" name="max_participants" min="1" required></div>
+          <div class="mb-3">
+            <label class="form-label">Program Fee</label>
+            <div class="row g-2">
+              <div class="col-5">
+                <select class="form-select" name="fee_type" id="feeType">
+                  <option value="free" selected>Free</option>
+                  <option value="paid">Paid</option>
+                </select>
+              </div>
+              <div class="col-7">
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" name="ticket_fee" id="ticketFee" min="0" step="0.01" value="0" placeholder="0.00">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="is_intercollege" id="intercollege"><label class="form-check-label" for="intercollege">Intercollege Event</label></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Submit Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

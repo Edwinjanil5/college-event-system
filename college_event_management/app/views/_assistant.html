@@ -1,0 +1,45 @@
+<aside class="campus-assistant" data-assistant-widget data-assistant-endpoint="{{ url_for('assistant.ask') }}" aria-label="CampusPulse website assistant">
+  <button class="campus-assistant-launcher" type="button" data-assistant-open aria-expanded="false" aria-controls="campusAssistantPanel">
+    <span class="campus-assistant-spark" aria-hidden="true">✦</span>
+    <span class="campus-assistant-launcher-copy">
+      <strong>Ask CampusPulse</strong>
+      <small>Instant website help</small>
+    </span>
+  </button>
+
+  <section class="campus-assistant-panel" id="campusAssistantPanel" role="dialog" aria-labelledby="campusAssistantTitle" hidden>
+    <header class="campus-assistant-header">
+      <div>
+        <span class="campus-assistant-eyebrow"><i></i> ONLINE ASSISTANT</span>
+        <h2 id="campusAssistantTitle">How can we help?</h2>
+      </div>
+      <div class="campus-assistant-header-actions">
+        <button type="button" class="campus-assistant-reset" data-assistant-reset aria-label="Clear conversation">↺</button>
+        <button type="button" class="campus-assistant-close" data-assistant-close aria-label="Close assistant">×</button>
+      </div>
+    </header>
+
+    <div class="campus-assistant-messages" data-assistant-messages role="log" aria-live="polite" aria-relevant="additions">
+      <div class="campus-assistant-message assistant">
+        <div class="campus-assistant-avatar" aria-hidden="true">✦</div>
+        <div class="campus-assistant-bubble">
+          Hello! I can help you navigate CampusPulse. Ask about accounts, events, registrations, feedback, PA points, reports, or a problem you are facing.
+        </div>
+      </div>
+    </div>
+
+    <div class="campus-assistant-suggestions" data-assistant-suggestions aria-label="Suggested questions">
+      <button type="button" data-assistant-question="How do I create an account?">Create an account</button>
+      <button type="button" data-assistant-question="How do I register for an event?">Register for an event</button>
+      <button type="button" data-assistant-question="How are PA points calculated?">PA points</button>
+      <button type="button" data-assistant-question="Why can I not see an event?">Find an event</button>
+    </div>
+
+    <form class="campus-assistant-form" data-assistant-form>
+      <label class="visually-hidden" for="campusAssistantQuestion">Ask CampusPulse a website question</label>
+      <input id="campusAssistantQuestion" type="text" data-assistant-input placeholder="Ask about CampusPulse..." autocomplete="off" maxlength="800">
+      <button type="submit" aria-label="Send question">↗</button>
+    </form>
+    <p class="campus-assistant-note">Answers are limited to CampusPulse website topics. No account or event data is changed by the assistant.</p>
+  </section>
+</aside>

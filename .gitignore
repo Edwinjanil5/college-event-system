@@ -1,0 +1,32 @@
+# Python and virtual environments
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data and generated reports
+*.db
+*.sqlite
+*.sqlite3
+**/static/uploads/
+
+# Build and release output
+build/
+dist/
+*.exe
+*.log
+
+# Editor/OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

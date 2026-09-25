@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% if request.path == '/how-to-use' %}How-To-Use | CampusPulse{% else %}CampusPulse | College Event Management{% endif %}</title>
+    <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='theme-20260925') }}">
+  </head>
+  <body class="campuspulse-body {% if request.path == '/' %}landing-body{% else %}campuspulse-page{% endif %}">
+    <nav class="navbar navbar-expand-lg landing-navbar campuspulse-navbar">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="{{ url_for('landing_page') }}" aria-label="CampusPulse home">
+          <img class="campuspulse-logo" src="{{ url_for('static', filename='images/campuspulse-logo.png') }}" alt="CampusPulse — College Event Management System">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('how_to_use') }}">How-To-Use</a></li>
+             <li class="nav-item"><a class="nav-link" href="{{ url_for('contact') }}">Support</a></li>
+            {% if current_user.is_authenticated %}
+              {% if current_user.role == 'student' %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+              {% elif current_user.role == 'organizer' %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('organizer.dashboard') }}">Dashboard</a></li>
+              {% elif current_user.role == 'hod' %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('hod.dashboard') }}">HoD Dashboard</a></li>
+              {% endif %}
+              <li class="nav-item">
+                <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="nav-link border-0 bg-transparent">Logout</button>
+                </form>
+              </li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.admin_login') }}">Admin Login</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Register</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="{% if request.path == '/' %}landing-main{% else %}campuspulse-main{% endif %}">
+      {% if request.path != '/' %}<div class="campuspulse-content container">{% endif %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+      {% if request.path != '/' %}</div>{% endif %}
+    </main>
+
+    {% include '_assistant.html' %}
+
+    <footer class="site-footer">
+      <div class="container">
+        <div class="site-footer-grid">
+          <div>
+            <strong>CampusPulse Support</strong>
+            <p>Need help with the website or app? Contact the developer directly.</p>
+          </div>
+          <div class="site-footer-links">
+            <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+            <a href="tel:{{ support_phone }}">{{ support_phone }}</a>
+            <a href="{{ url_for('contact') }}">Support details</a>
+          </div>
+        </div>
+        <div class="site-footer-bottom">Please never share your password when reporting an issue.</div>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/assistant.js') }}"></script>
+  </body>
+</html>

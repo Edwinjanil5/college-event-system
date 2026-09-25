@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="landing-hero">
+  <div class="landing-copy">
+    <div class="hero-kicker"><span></span> COLLEGE EVENTS, REIMAGINED</div>
+    <h1>Bring every campus moment <em>to life.</em></h1>
+    <p class="hero-description">Plan memorable events, connect students, and turn participation into measurable progress with one beautifully simple platform.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('auth.register') }}" class="landing-btn landing-btn-primary">Create Account <span>↗</span></a>
+      <a href="{{ url_for('auth.login') }}" class="landing-btn landing-btn-secondary">Explore the platform</a>
+     <button class="landing-btn landing-btn-assistant" type="button" data-assistant-open>
+       <span aria-hidden="true">✦</span> Ask CampusPulse
+     </button>
+    </div>
+    <div class="hero-proof">
+      <div class="proof-avatars"><span>ST</span><span>OR</span><span>AD</span></div>
+      <div><strong>One connected campus</strong><small>Students, organizers &amp; administrators</small></div>
+    </div>
+  </div>
+  <div class="landing-visual" aria-label="Campus event management overview">
+    <div class="visual-glow"></div>
+    <div class="visual-card visual-card-main">
+      <div class="visual-card-top"><span class="visual-dot"></span><strong>CampusPulse</strong><span class="visual-status">LIVE</span></div>
+      <div class="visual-calendar"><span>THIS MONTH</span><strong>Campus moments<br><em>made simple.</em></strong></div>
+      <div class="visual-event-list">
+        <div><b>01</b><span><strong>Innovation Summit</strong><small>Auditorium &middot; 120 seats</small></span><i>Approved</i></div>
+        <div><b>02</b><span><strong>Cultural Meet</strong><small>Open Air Theatre</small></span><i>Completed</i></div>
+      </div>
+    </div>
+    <div class="visual-card visual-card-float"><span class="float-icon">✦</span><strong>18 PA points</strong><small>Performance tracked</small></div>
+    <div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div>
+  </div>
+</section>
+
+<section class="landing-features">
+  <div><span class="feature-number">01</span><strong>Plan with clarity</strong><p>Create and submit events in minutes.</p></div>
+  <div><span class="feature-number">02</span><strong>Engage your campus</strong><p>Make registration effortless for students.</p></div>
+  <div><span class="feature-number">03</span><strong>Measure what matters</strong><p>Track feedback, PA points, and reports.</p></div>
+</section>
+
+<section class="landing-assistant-promo" aria-labelledby="landingAssistantTitle">
+  <div>
+    <span class="hero-kicker"><span></span> WEBSITE ASSISTANT</span>
+    <h2 id="landingAssistantTitle">Not sure where to start?</h2>
+    <p>Ask about accounts, event approvals, registrations, feedback, PA points, reports, or any other CampusPulse doubt.</p>
+  </div>
+  <button class="landing-btn landing-btn-assistant" type="button" data-assistant-open>
+    Open the assistant <span aria-hidden="true">↗</span>
+  </button>
+</section>
+
+<section class="landing-support-promo" aria-labelledby="landingSupportTitle">
+  <div>
+    <span class="hero-kicker"><span></span> APP SUPPORT</span>
+    <h2 id="landingSupportTitle">Need a developer?</h2>
+    <p>If CampusPulse crashes or something is not working, contact {{ support_name }} directly.</p>
+  </div>
+  <div class="landing-support-actions">
+    <a class="landing-btn landing-btn-secondary" href="mailto:{{ support_email }}">Email support</a>
+    <a class="landing-btn landing-btn-secondary" href="tel:{{ support_phone }}">Call {{ support_phone }}</a>
+    <a class="support-details-link" href="{{ url_for('contact') }}">View support details <span aria-hidden="true">↗</span></a>
+  </div>
+</section>
+{% endblock %}

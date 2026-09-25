@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h2 class="text-center text-primary mb-4">Admin Login</h2>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label for="email" class="form-label">Admin Email</label>
+            <input type="email" class="form-control" id="email" name="email" autocomplete="username" required>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
+              <button type="button" class="btn btn-outline-secondary" data-toggle-password data-target="password">Show</button>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <a href="{{ url_for('auth.forgot_password') }}" class="small">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn btn-dark w-100">Login as Admin</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

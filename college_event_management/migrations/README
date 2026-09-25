@@ -1,0 +1,18 @@
+# CampusPulse database migrations
+
+Migrations are managed with Flask-Migrate/Alembic.
+
+From the repository root, use the safe helper so an unrelated parent `.env`
+cannot override the project database:
+
+```powershell
+python setup_project.py --migrate
+```
+
+For a new database, `db upgrade` creates the schema from the initial revision.
+For an older local SQLite database without an `alembic_version` table, the
+helper first stamps the reviewed baseline and then applies the integrity
+revision. Back up the database before doing this.
+
+Do not use `db.create_all()` as a production migration strategy. If the
+models change, create a new revision and keep `schema.sql` synchronized.

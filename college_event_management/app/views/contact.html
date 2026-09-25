@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="support-page-header">
+      <span class="support-kicker">CAMPUSPULSE SUPPORT</span>
+      <h1>We’re here to help</h1>
+      <p>If the website or desktop app crashes, an event will not load, or you need help with your account, contact the developer directly.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm support-contact-card">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="support-avatar" aria-hidden="true">EJ</div>
+          <div>
+            <h2 class="h4 mb-1">{{ support_name }}</h2>
+            <p class="text-muted mb-0">{{ support_role }}</p>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <a class="support-contact-option" href="mailto:{{ support_email }}">
+              <span class="support-contact-icon" aria-hidden="true">@</span>
+              <span><small>Email</small><strong>{{ support_email }}</strong></span>
+            </a>
+          </div>
+          <div class="col-md-6">
+            <a class="support-contact-option" href="tel:{{ support_phone }}">
+              <span class="support-contact-icon" aria-hidden="true">☎</span>
+              <span><small>Phone</small><strong>{{ support_phone }}</strong></span>
+            </a>
+          </div>
+        </div>
+
+        <div class="alert alert-light border mt-4 mb-0">
+          <strong>When reporting an issue:</strong>
+          include the page you were using, the action you attempted, and the approximate time of the error. Never send your password.
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="{{ url_for('landing_page') }}" class="btn btn-outline-primary">Back to Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

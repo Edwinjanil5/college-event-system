@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+  <div>
+    <p class="text-uppercase small fw-semibold text-primary mb-1">Department review</p>
+    <h2 class="mb-1 text-primary">HoD Dashboard</h2>
+    <p class="text-secondary mb-0">Verify program details and forward approved programs to the administrator.</p>
+  </div>
+  <span class="badge bg-primary fs-6">Head of the Department</span>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-4"><div class="card shadow-sm border-0"><div class="card-body"><h6 class="text-muted text-uppercase">Awaiting HoD review</h6><h3>{{ counts.pending_hod }}</h3></div></div></div>
+  <div class="col-md-4"><div class="card shadow-sm border-0"><div class="card-body"><h6 class="text-muted text-uppercase">Sent to admin</h6><h3>{{ counts.hod_approved }}</h3></div></div></div>
+  <div class="col-md-4"><div class="card shadow-sm border-0"><div class="card-body"><h6 class="text-muted text-uppercase">Final approved</h6><h3>{{ counts.approved }}</h3></div></div></div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle mb-0">
+        <thead class="table-primary">
+          <tr>
+            <th>Program details</th>
+            <th>Organizer</th>
+            <th>Schedule</th>
+            <th>Fee</th>
+            <th>Status</th>
+            <th>HoD action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in events %}
+          <tr>
+            <td>
+              <strong>{{ event.title }}</strong>
+              <small class="d-block text-muted">{{ event.venue }}</small>
+              {% if event.description %}<small class="d-block text-muted">{{ event.description|truncate(120) }}</small>{% endif %}
+              {% if event.is_intercollege %}<span class="badge bg-info text-dark mt-1">Intercollege</span>{% endif %}
+            </td>
+            <td>{{ event.organizer.name }}</td>
+            <td>
+              <small class="d-block">Event: {{ event.event_date.strftime('%Y-%m-%d %H:%M') }}</small>
+              <small class="d-block text-muted">Deadline: {{ event.registration_deadline.strftime('%Y-%m-%d %H:%M') }}</small>
+              <small class="d-block text-muted">Capacity: {{ event.max_participants }}</small>
+            </td>
+            <td>
+              {% if event.ticket_fee and event.ticket_fee > 0 %}
+                ₹{{ '%.2f'|format(event.ticket_fee) }}
+              {% else %}
+                Free
+              {% endif %}
+            </td>
+            <td>
+              {% if event.status == 'pending_hod' %}
+                <span class="badge bg-warning text-dark">Awaiting HoD review</span>
+              {% elif event.status == 'hod_approved' %}
+                <span class="badge bg-info text-dark">Awaiting admin approval</span>
+              {% elif event.status == 'approved' %}
+                <span class="badge bg-success">Admin approved</span>
+              {% elif event.status == 'rejected' %}
+                <span class="badge bg-danger">Rejected</span>
+              {% elif event.status == 'completed' %}
+                <span class="badge bg-secondary">Completed</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ event.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if event.status == 'pending_hod' %}
+                <div class="d-flex flex-wrap gap-2">
+                  <form method="post" action="{{ url_for('hod.review_event', event_id=event.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="send_to_admin">
+                    <button type="submit" class="btn btn-primary btn-sm">Verify &amp; send to admin</button>
+                  </form>
+                  <form method="post" action="{{ url_for('hod.review_event', event_id=event.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="reject">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Reject</button>
+                  </form>
+                </div>
+              {% elif event.status == 'hod_approved' %}
+                <span class="text-muted">Forwarded for final approval</span>
+              {% else %}
+                <span class="text-muted">No action required</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No programs have been submitted yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
