@@ -27,7 +27,7 @@ git push origin main
 The GitHub repository is:
 
 ```text
-https://github.com/edwinjanil5/college-event-system
+https://github.com/Edwinjanil5/college-event-system
 ```
 
 ## 2. Import the repository into Vercel
