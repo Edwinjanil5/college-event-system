@@ -1,0 +1,11 @@
+<svg width="196" height="48" viewBox="0 0 196 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">CampusPulse logo</title>
+  <desc id="desc">An olive pulse mark beside the CampusPulse wordmark</desc>
+  <g aria-hidden="true">
+    <circle cx="24" cy="24" r="18" stroke="#A5AD68" stroke-width="1.5" opacity=".55"/>
+    <circle cx="24" cy="24" r="12" stroke="#8F9851" stroke-width="1.5" opacity=".8"/>
+    <path d="M7 25.5H14L17.5 17L23 32L27.5 12L32 25.5H41" stroke="#8F9851" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="24" cy="24" r="3.2" fill="#D4DAA4"/>
+  </g>
+  <text x="52" y="30" fill="#20231D" font-family="Georgia, 'Times New Roman', serif" font-size="21" font-weight="700" letter-spacing="-0.8">CampusPulse</text>
+</svg>

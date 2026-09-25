@@ -12,6 +12,7 @@ htmlcov/
 .env
 .env.*
 !.env.example
+.vercel/
 
 # Runtime data and generated reports
 *.db

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% if request.path == '/how-to-use' %}How-To-Use | CampusPulse{% else %}CampusPulse | College Event Management{% endif %}</title>
+    <title>{% if request.path == '/' %}CampusPulse | College Event Management{% elif request.path == '/how-to-use' %}How-To-Use | CampusPulse{% elif request.path == '/contact' %}Support | CampusPulse{% elif request.path == '/login' %}Login | CampusPulse{% elif request.path == '/register' %}Register | CampusPulse{% elif request.path == '/admin/login' %}Admin Login | CampusPulse{% else %}CampusPulse | College Event Management{% endif %}</title>
     <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='theme-20260925') }}">
   </head>

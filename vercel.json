@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "flask",
+  "functions": {
+    "wsgi.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{college_event_management/tests/**,college_event_management/venv/**,college_event_management/build/**,college_event_management/dist/**,**/*.db,**/*.exe,**/*.pdf,manual-*.png,home-screenshot.png,**/*.pyc,**/__pycache__/**}"
+    }
+  }
+}

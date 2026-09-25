@@ -1,0 +1,17 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="20" y1="20" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="wave" x1="40" y1="50" x2="150" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#F5F3FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="18" y="18" width="164" height="164" rx="42" fill="url(#bg)"/>
+  <path d="M55 132V80.5C55 77.4624 57.4624 75 60.5 75H87.5C90.5376 75 93 77.4624 93 80.5V132M107 132V66.5C107 63.4624 109.462 61 112.5 61H139.5C142.538 61 145 63.4624 145 66.5V132M71 95H77M71 107H77M71 119H77M121 84H127M121 96H127M121 108H127M121 120H127" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M58 145H142" stroke="rgba(255,255,255,0.7)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M44 120C58 110 70 104 82 100C98 95 109 96 120 104C131 112 140 118 156 120" stroke="url(#wave)" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="156" cy="120" r="8" fill="#F8FAFC"/>
+</svg>
