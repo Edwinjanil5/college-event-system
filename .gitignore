@@ -31,3 +31,5 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+.env.local
