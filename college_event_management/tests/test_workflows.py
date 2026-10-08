@@ -36,6 +36,153 @@ def test_organizer_can_select_class_incharge_status(client, app, user_factory):
         assert db.session.get(User, organizer_id).is_class_incharge is False
 
 
+def test_student_registration_waits_for_class_teacher_approval(client, app, user_factory):
+    with app.app_context():
+        student = user_factory('student', 'student-approval@example.com')
+        organizer = user_factory(
+            'organizer',
+            'class-teacher@example.com',
+            name='Class Teacher',
+        )
+        organizer.is_class_incharge = True
+        db.session.add_all([student, organizer])
+        db.session.commit()
+        event = Event(
+            title='Teacher approval event',
+            venue='Hall',
+            event_date=utcnow() + timedelta(days=3),
+            registration_deadline=utcnow() + timedelta(days=2),
+            max_participants=20,
+            organizer_id=organizer.id,
+            status='approved',
+        )
+        db.session.add(event)
+        db.session.commit()
+        event_id = event.id
+        organizer_id = organizer.id
+        student_id = student.id
+
+    student_client = app.test_client()
+    login(student_client, 'student-approval@example.com')
+    response = student_client.post(f'/student/events/{event_id}/register')
+    assert response.status_code == 302
+
+    with app.app_context():
+        registration = Registration.query.filter_by(
+            user_id=student_id,
+            event_id=event_id,
+        ).first()
+        assert registration is not None
+        assert registration.status == 'pending_teacher'
+        assert registration.teacher_id == organizer_id
+        registration_id = registration.id
+
+    student_dashboard = student_client.get('/student/dashboard')
+    assert student_dashboard.status_code == 200
+    assert b'Awaiting teacher approval' in student_dashboard.data
+
+    teacher_client = app.test_client()
+    login(teacher_client, 'class-teacher@example.com')
+    dashboard = teacher_client.get('/organizer/dashboard')
+    assert dashboard.status_code == 200
+    assert b'Class teacher approval requests' in dashboard.data
+    assert b'student-approval@example.com' in dashboard.data
+
+    review = teacher_client.post(
+        f'/organizer/registrations/{registration_id}/review',
+        data={'action': 'approve', 'teacher_note': 'Approved for the class.'},
+    )
+    assert review.status_code == 302
+    with app.app_context():
+        registration = db.session.get(Registration, registration_id)
+        assert registration.status == 'approved'
+        assert registration.teacher_note == 'Approved for the class.'
+        assert registration.reviewed_at is not None
+
+    confirmed_dashboard = student_client.get('/student/dashboard')
+    assert confirmed_dashboard.status_code == 200
+    assert b'Confirmed' in confirmed_dashboard.data
+
+
+def test_rejected_registration_can_be_resubmitted(client, app, user_factory):
+    with app.app_context():
+        student = user_factory('student', 'resubmit@example.com')
+        organizer = user_factory('organizer', 'resubmit-teacher@example.com')
+        db.session.add_all([student, organizer])
+        db.session.commit()
+        event = Event(
+            title='Resubmission event',
+            venue='Hall',
+            event_date=utcnow() + timedelta(days=3),
+            registration_deadline=utcnow() + timedelta(days=2),
+            max_participants=20,
+            organizer_id=organizer.id,
+            status='approved',
+        )
+        db.session.add(event)
+        db.session.commit()
+        event_id = event.id
+
+    login(client, 'resubmit@example.com')
+    client.post(f'/student/events/{event_id}/register')
+    with app.app_context():
+        registration = Registration.query.filter_by(event_id=event_id).first()
+        registration_id = registration.id
+        registration.status = 'rejected'
+        registration.reviewed_at = utcnow()
+        db.session.commit()
+
+    teacher_client = app.test_client()
+    login(teacher_client, 'resubmit-teacher@example.com')
+    teacher_client.post(
+        f'/organizer/registrations/{registration_id}/review',
+        data={'action': 'reject', 'teacher_note': 'Please clarify the class.'},
+    )
+    response = client.post(f'/student/events/{event_id}/register')
+    assert response.status_code == 302
+    with app.app_context():
+        registration = db.session.get(Registration, registration_id)
+        assert registration.status == 'pending_teacher'
+        assert registration.teacher_note is None
+
+
+def test_teacher_cannot_review_another_organizers_request(client, app, user_factory):
+    with app.app_context():
+        student = user_factory('student', 'ownership-student@example.com')
+        owner = user_factory('organizer', 'request-owner@example.com')
+        other = user_factory('organizer', 'other-teacher@example.com')
+        db.session.add_all([student, owner, other])
+        db.session.commit()
+        event = Event(
+            title='Ownership event',
+            venue='Hall',
+            event_date=utcnow() + timedelta(days=3),
+            registration_deadline=utcnow() + timedelta(days=2),
+            max_participants=20,
+            organizer_id=owner.id,
+            status='approved',
+        )
+        db.session.add(event)
+        db.session.commit()
+        event_id = event.id
+
+    student_client = app.test_client()
+    login(student_client, 'ownership-student@example.com')
+    student_client.post(f'/student/events/{event_id}/register')
+    with app.app_context():
+        registration_id = Registration.query.filter_by(event_id=event_id).first().id
+
+    other_client = app.test_client()
+    login(other_client, 'other-teacher@example.com')
+    response = other_client.post(
+        f'/organizer/registrations/{registration_id}/review',
+        data={'action': 'approve'},
+    )
+    assert response.status_code == 302
+    with app.app_context():
+        assert db.session.get(Registration, registration_id).status == 'pending_teacher'
+
+
 def test_hod_verifies_program_before_admin_final_approval(client, app, user_factory):
     with app.app_context():
         organizer = user_factory('organizer', 'organizer@example.com')
@@ -216,7 +363,7 @@ def test_feedback_requires_registration_and_only_one_submission(client, app, use
     with app.app_context():
         assert Feedback.query.filter_by(event_id=event_id, user_id=student_id).count() == 0
 
-        db.session.add(Registration(user_id=student_id, event_id=event_id))
+        db.session.add(Registration(user_id=student_id, event_id=event_id, status='approved'))
         db.session.commit()
 
     response = client.post(

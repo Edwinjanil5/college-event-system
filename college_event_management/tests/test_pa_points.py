@@ -32,8 +32,14 @@ def test_pa_point_calculation_algorithm():
             user = User(name=f'User {i}', email=f'user{i}@example.com', password_hash='hashed', role='student')
             db.session.add(user)
             db.session.flush()
-            db.session.add(Registration(user_id=user.id, event_id=event.id))
+            db.session.add(Registration(user_id=user.id, event_id=event.id, status='approved'))
 
+        db.session.commit()
+
+        pending_user = User(name='Pending User', email='pending@example.com', password_hash='hashed', role='student')
+        db.session.add(pending_user)
+        db.session.flush()
+        db.session.add(Registration(user_id=pending_user.id, event_id=event.id, status='pending_teacher'))
         db.session.commit()
 
         result = calculate_pa_points(event)

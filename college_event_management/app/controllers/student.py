@@ -12,7 +12,10 @@ student_bp = Blueprint('student', __name__)
 
 def can_register_for_event(event, now=None):
     current_time = now or utcnow()
-    registration_count = Registration.query.filter_by(event_id=event.id).count()
+    registration_count = Registration.query.filter(
+        Registration.event_id == event.id,
+        Registration.status.in_(('pending_teacher', 'approved')),
+    ).count()
     return (
         event.status == 'approved'
         and event.registration_deadline >= current_time
@@ -35,11 +38,21 @@ def dashboard():
         .all()
     )
     registrations = Registration.query.filter_by(user_id=current_user.id).all()
-    registered_event_ids = {item.event_id for item in registrations}
+    registration_by_event = {item.event_id: item for item in registrations}
+    approved_event_ids = {
+        item.event_id for item in registrations if item.status == 'approved'
+    }
+    pending_teacher_event_ids = {
+        item.event_id for item in registrations if item.status == 'pending_teacher'
+    }
+    rejected_event_ids = {
+        item.event_id for item in registrations if item.status == 'rejected'
+    }
     completed_events = (
         Event.query
         .join(Registration, Registration.event_id == Event.id)
         .filter(Registration.user_id == current_user.id)
+        .filter(Registration.status == 'approved')
         .filter(Event.status == 'completed')
         .order_by(Event.event_date.desc())
         .all()
@@ -51,7 +64,11 @@ def dashboard():
     return render_template(
         'student_dashboard.html',
         events=events,
-        registered_event_ids=registered_event_ids,
+        registered_event_ids=approved_event_ids,
+        approved_event_ids=approved_event_ids,
+        pending_teacher_event_ids=pending_teacher_event_ids,
+        rejected_event_ids=rejected_event_ids,
+        registration_by_event=registration_by_event,
         completed_events=completed_events,
         feedback_event_ids=feedback_event_ids,
     )
@@ -66,21 +83,44 @@ def register_for_event(event_id):
         flash('This event is not open for registration.', 'danger')
         return redirect(url_for('student.dashboard'))
 
-    existing = Registration.query.filter_by(user_id=current_user.id, event_id=event.id).first()
-    if existing:
-        flash('You are already registered for this event.', 'warning')
+    teacher = event.organizer
+    if teacher is None:
+        flash('This event does not have an assigned class teacher yet.', 'danger')
         return redirect(url_for('student.dashboard'))
 
-    registration = Registration(user_id=current_user.id, event_id=event.id)
+    existing = Registration.query.filter_by(user_id=current_user.id, event_id=event.id).first()
+    if existing and existing.status == 'approved':
+        flash('Your teacher has already approved your registration for this event.', 'info')
+        return redirect(url_for('student.dashboard'))
+    if existing and existing.status == 'pending_teacher':
+        flash('Your registration request is already waiting for class teacher approval.', 'info')
+        return redirect(url_for('student.dashboard'))
+
+    if existing and existing.status == 'rejected':
+        existing.status = 'pending_teacher'
+        existing.teacher_id = teacher.id
+        existing.registered_at = utcnow()
+        existing.reviewed_at = None
+        existing.teacher_note = None
+        db.session.commit()
+        flash(f'Registration request resent to {teacher.name} for approval.', 'success')
+        return redirect(url_for('student.dashboard'))
+
+    registration = Registration(
+        user_id=current_user.id,
+        event_id=event.id,
+        status='pending_teacher',
+        teacher_id=teacher.id,
+    )
     db.session.add(registration)
     try:
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        flash('You are already registered for this event.', 'warning')
+        flash('You already have a registration request for this event.', 'warning')
         return redirect(url_for('student.dashboard'))
 
-    flash('Successfully registered for the event.', 'success')
+    flash(f'Registration request sent to {teacher.name} for class teacher approval.', 'success')
     return redirect(url_for('student.dashboard'))
 
 
@@ -90,8 +130,8 @@ def payment_info(event_id):
     """Show the safe, non-transactional payment policy for a paid event."""
     event = db.get_or_404(Event, event_id)
     registration = Registration.query.filter_by(user_id=current_user.id, event_id=event.id).first()
-    if registration is None:
-        flash('Register for the event before viewing payment instructions.', 'warning')
+    if registration is None or registration.status != 'approved':
+        flash('Your registration must be approved by the class teacher before viewing payment instructions.', 'warning')
         return redirect(url_for('student.dashboard'))
     if event.ticket_fee <= 0:
         flash('This program is free and does not require payment.', 'info')
@@ -129,8 +169,8 @@ def cancel_registration(event_id):
 def submit_feedback(event_id):
     event = db.get_or_404(Event, event_id)
     registration = Registration.query.filter_by(user_id=current_user.id, event_id=event.id).first()
-    if registration is None:
-        flash('Only registered students can submit feedback for this event.', 'danger')
+    if registration is None or registration.status != 'approved':
+        flash('Only students with teacher-approved registration can submit feedback for this event.', 'danger')
         return redirect(url_for('student.dashboard'))
 
     if event.status != 'completed':

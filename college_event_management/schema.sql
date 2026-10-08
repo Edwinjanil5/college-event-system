@@ -32,9 +32,14 @@ CREATE TABLE IF NOT EXISTS registrations (
     user_id INT NOT NULL,
     event_id INT NOT NULL,
     registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('pending_teacher', 'approved', 'rejected') NOT NULL DEFAULT 'pending_teacher',
+    teacher_id INT,
+    reviewed_at DATETIME,
+    teacher_note VARCHAR(500),
     UNIQUE (user_id, event_id),
     CONSTRAINT fk_registrations_user FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT fk_registrations_event FOREIGN KEY (event_id) REFERENCES events(id)
+    CONSTRAINT fk_registrations_event FOREIGN KEY (event_id) REFERENCES events(id),
+    CONSTRAINT fk_registrations_teacher FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS feedback (

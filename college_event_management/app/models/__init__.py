@@ -80,10 +80,20 @@ class Registration(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), nullable=False)
     registered_at = db.Column(db.DateTime, default=utc_now)
+    status = db.Column(
+        db.Enum('pending_teacher', 'approved', 'rejected', name='registration_status'),
+        nullable=False,
+        default='pending_teacher',
+        server_default='pending_teacher',
+    )
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    teacher_note = db.Column(db.String(500), nullable=True)
 
     __table_args__ = (db.UniqueConstraint('user_id', 'event_id', name='uq_user_event_registration'),)
 
-    user = db.relationship('User', backref=db.backref('event_registrations', lazy=True))
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('event_registrations', lazy=True))
+    teacher = db.relationship('User', foreign_keys=[teacher_id], backref=db.backref('reviewed_registrations', lazy=True))
 
 
 class Feedback(db.Model):

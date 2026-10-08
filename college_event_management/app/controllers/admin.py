@@ -14,7 +14,10 @@ EMAIL_PATTERN = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
 
 
 def calculate_pa_points(event, commit=True):
-    participant_count = Registration.query.filter_by(event_id=event.id).count()
+    participant_count = Registration.query.filter_by(
+        event_id=event.id,
+        status='approved',
+    ).count()
     feedback_rows = Feedback.query.filter_by(event_id=event.id).all()
     avg_rating = sum(item.rating for item in feedback_rows) / len(feedback_rows) if feedback_rows else 0.0
 

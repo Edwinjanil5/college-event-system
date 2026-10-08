@@ -5,7 +5,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.controllers.auth import role_required
-from app.models import Event, db
+from app.models import Event, Registration, db
 from app.workflow import InvalidEventTransition, transition_event, utcnow
 
 
@@ -20,7 +20,15 @@ def _dashboard_context():
         status: sum(1 for event in events if event.status == status)
         for status in ('pending_hod', 'hod_approved', 'approved', 'completed')
     }
-    return events, counts
+    teacher_requests = (
+        Registration.query
+        .join(Event, Registration.event_id == Event.id)
+        .filter(Event.organizer_id == current_user.id)
+        .filter(Registration.status == 'pending_teacher')
+        .order_by(Registration.registered_at.asc())
+        .all()
+    )
+    return events, counts, teacher_requests
 
 
 def _parse_local_datetime(value, field_name):
@@ -36,8 +44,13 @@ def _parse_local_datetime(value, field_name):
 @organizer_bp.route('/dashboard')
 @role_required('organizer')
 def dashboard():
-    events, counts = _dashboard_context()
-    return render_template('organizer_dashboard.html', events=events, counts=counts)
+    events, counts, teacher_requests = _dashboard_context()
+    return render_template(
+        'organizer_dashboard.html',
+        events=events,
+        counts=counts,
+        teacher_requests=teacher_requests,
+    )
 
 
 @organizer_bp.route('/profile/class-incharge', methods=['POST'])
@@ -52,6 +65,40 @@ def update_class_incharge_status():
     db.session.commit()
     status = 'Class incharge' if current_user.is_class_incharge else 'Regular organizer'
     flash(f'Organizer status updated: {status}.', 'success')
+    return redirect(url_for('organizer.dashboard'))
+
+
+@organizer_bp.route('/registrations/<int:registration_id>/review', methods=['POST'])
+@role_required('organizer')
+def review_registration(registration_id):
+    registration = Registration.query.filter_by(id=registration_id).with_for_update().first_or_404()
+    event = registration.event
+    action = request.form.get('action', '').strip().lower()
+    note = request.form.get('teacher_note', '').strip()
+
+    if registration.teacher_id != current_user.id and event.organizer_id != current_user.id:
+        flash('You cannot review a registration for another class teacher.', 'danger')
+        return redirect(url_for('organizer.dashboard'))
+    if registration.status != 'pending_teacher':
+        flash('This registration request has already been reviewed.', 'info')
+        return redirect(url_for('organizer.dashboard'))
+    if action not in {'approve', 'reject'}:
+        flash('Choose a valid class teacher review action.', 'danger')
+        return redirect(url_for('organizer.dashboard'))
+    if len(note) > 500:
+        flash('Teacher notes must be 500 characters or fewer.', 'danger')
+        return redirect(url_for('organizer.dashboard'))
+
+    registration.status = 'approved' if action == 'approve' else 'rejected'
+    registration.teacher_id = current_user.id
+    registration.reviewed_at = utcnow()
+    registration.teacher_note = note or None
+    db.session.commit()
+
+    if action == 'approve':
+        flash(f'Approved {registration.user.name} for {event.title}.', 'success')
+    else:
+        flash(f'Declined {registration.user.name} for {event.title}.', 'warning')
     return redirect(url_for('organizer.dashboard'))
 
 
@@ -107,8 +154,13 @@ def create_event():
 
         if error:
             flash(error, 'danger')
-            events, counts = _dashboard_context()
-            return render_template('organizer_dashboard.html', events=events, counts=counts)
+            events, counts, teacher_requests = _dashboard_context()
+            return render_template(
+                'organizer_dashboard.html',
+                events=events,
+                counts=counts,
+                teacher_requests=teacher_requests,
+            )
 
         event = Event(
             title=title,
@@ -128,8 +180,13 @@ def create_event():
         flash(f'Event submitted for HoD verification with a {fee_label} ticket fee.', 'success')
         return redirect(url_for('organizer.dashboard'))
 
-    events, counts = _dashboard_context()
-    return render_template('organizer_dashboard.html', events=events, counts=counts)
+    events, counts, teacher_requests = _dashboard_context()
+    return render_template(
+        'organizer_dashboard.html',
+        events=events,
+        counts=counts,
+        teacher_requests=teacher_requests,
+    )
 
 
 @organizer_bp.route('/events/<int:event_id>/complete', methods=['POST'])

@@ -9,7 +9,9 @@ CampusPulse is a Flask-based college event-management application with student, 
 - Organizer profile flag for class-incharge status
 - HoD verification stage before administrator approval
 - Pending HoD → HoD approved → admin approved/rejected → completed event workflow
-- Capacity/deadline-aware student registration and cancellation
+- Capacity/deadline-aware student registration with class teacher approval
+- Organizer class-teacher approval queue for student registration requests
+- Student cancellation of pending or confirmed registrations
 - Feedback only for registered students and completed events
 - PA point calculation and PDF/Excel report generation
 - Real CSRF protection for state-changing requests

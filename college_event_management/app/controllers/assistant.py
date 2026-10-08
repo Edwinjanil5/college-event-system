@@ -91,8 +91,9 @@ KNOWLEDGE_BASE = (
         ),
         'keywords': ('role', 'student', 'organizer', 'administrator', 'admin', 'permission', 'account'),
         'answer': (
-            'Students browse approved events, register, cancel before deadlines, and provide '
-            'feedback. Organizers create events and manage their own event lifecycle. The HoD '
+            'Students browse approved events, request registration, cancel before deadlines, and provide '
+            'feedback after teacher approval. Organizers create events, manage their own event lifecycle, '
+            'and approve or reject student registration requests. The HoD '
             'verifies program details and forwards approved programs to the administrator. '
             'Administrators provide final approval, calculate PA points, and export reports.'
         ),
@@ -107,8 +108,8 @@ KNOWLEDGE_BASE = (
         'keywords': ('class', 'incharge', 'teacher', 'profile', 'organizer', 'status'),
         'answer': (
             'Open your Organizer Dashboard and use the Organizer profile card. In the Class '
-            'incharge dropdown choose Yes or No, then select Save. This status is saved to your '
-            'organizer account and does not change your event approval permissions.'
+            'incharge dropdown choose Yes or No, then select Save. Student registration requests '
+            'for your events are shown in the same dashboard for class teacher approval.'
         ),
         'links': (('organizer.dashboard', 'Open Organizer Dashboard'), ('how_to_use', 'Read the organizer guide')),
     },
@@ -150,9 +151,10 @@ KNOWLEDGE_BASE = (
         ),
         'keywords': ('student', 'event', 'register', 'registration', 'join', 'seat', 'available', 'participate'),
         'answer': (
-            'Open the Student Dashboard and choose Register on an approved upcoming event. '
-            'Registration is allowed only before the registration deadline and while seats '
-            'remain. Each student can register once for a particular event.'
+            'Open the Student Dashboard and choose Request registration on an approved upcoming '
+            'event. Your request is sent to the class teacher for the event organizer. Your place '
+            'is confirmed only after the teacher approves it. Registration requests are allowed '
+            'before the deadline and while seats remain; each student can request once per event.'
         ),
         'links': (('auth.login', 'Open Student Login'), ('how_to_use', 'Read the student guide')),
     },

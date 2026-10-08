@@ -3,20 +3,28 @@
 <div class="page-heading d-flex justify-content-between align-items-center mb-4">
   <div>
     <h2 class="mb-1 text-primary">Student Dashboard</h2>
-    <p class="text-secondary mb-0">Explore approved upcoming events and manage your participation.</p>
+    <p class="text-secondary mb-0">Explore approved upcoming events and send registration requests to your class teacher.</p>
   </div>
 </div>
 
 <div class="row g-4 mb-4">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card shadow-sm border-0 h-100">
       <div class="card-body">
-        <h6 class="text-muted text-uppercase">My Registrations</h6>
-        <h3>{{ registered_event_ids|length }}</h3>
+        <h6 class="text-muted text-uppercase">Confirmed</h6>
+        <h3>{{ approved_event_ids|length }}</h3>
       </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <h6 class="text-muted text-uppercase">Awaiting Teacher</h6>
+        <h3>{{ pending_teacher_event_ids|length }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
     <div class="card shadow-sm border-0 h-100">
       <div class="card-body">
         <h6 class="text-muted text-uppercase">Open for Registration</h6>
@@ -24,7 +32,7 @@
       </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card shadow-sm border-0 h-100">
       <div class="card-body">
         <h6 class="text-muted text-uppercase">Paid Programs</h6>
@@ -66,8 +74,15 @@
               {% endif %}
             </td>
             <td>
+              {% set registration = registration_by_event.get(event.id) %}
+              {% if registration and registration.teacher_note %}
+                <small class="d-block text-muted mb-2">Teacher note: {{ registration.teacher_note }}</small>
+              {% endif %}
+              {% if registration and registration.teacher %}
+                <small class="d-block text-muted mb-2">Class teacher: {{ registration.teacher.name }}</small>
+              {% endif %}
               <div class="d-flex flex-wrap gap-2">
-                {% if event.id in registered_event_ids %}
+                {% if event.id in approved_event_ids %}
                   <form method="post" action="{{ url_for('student.cancel_registration', event_id=event.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-danger btn-sm">Cancel</button>
@@ -75,10 +90,22 @@
                   {% if event.ticket_fee and event.ticket_fee > 0 %}
                     <a href="{{ url_for('student.payment_info', event_id=event.id) }}" class="btn btn-warning btn-sm">Payment information</a>
                   {% endif %}
+                {% elif event.id in pending_teacher_event_ids %}
+                  <span class="badge bg-warning text-dark">Awaiting teacher approval</span>
+                  <form method="post" action="{{ url_for('student.cancel_registration', event_id=event.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Cancel request</button>
+                  </form>
+                {% elif event.id in rejected_event_ids %}
+                  <span class="badge bg-danger">Teacher declined</span>
+                  <form method="post" action="{{ url_for('student.register_for_event', event_id=event.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary btn-sm">Request again</button>
+                  </form>
                 {% else %}
                   <form method="post" action="{{ url_for('student.register_for_event', event_id=event.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-primary btn-sm">Register</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Request registration</button>
                   </form>
                 {% endif %}
               </div>
