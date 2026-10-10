@@ -15,6 +15,8 @@ def app(tmp_path):
             'REPORTS_FOLDER': str(tmp_path / 'reports'),
             'REPORT_RETENTION_DAYS': 30,
             'MAX_REPORT_FILES': 20,
+            'GEO_MODEL_FOLDER': str(tmp_path / 'geo-model'),
+            'ATTENDANCE_FOLDER': str(tmp_path / 'attendance'),
         }
     )
     with application.app_context():

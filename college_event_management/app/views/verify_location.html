@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block content %}
+<div id="verifyApp" data-verify-event="{{ event.id }}">
+<div class="page-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div>
+    <h2 class="mb-1 text-primary">Verify attendance location</h2>
+    <p class="text-secondary mb-0">{{ event.title }} &middot; {{ event.venue }}</p>
+  </div>
+  <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">Back to dashboard</a>
+</div>
+
+<div class="alert alert-info border-0 shadow-sm" role="note">
+  <strong>How this works.</strong> Your device captures one photo and one location reading.
+  The geolocation is compared against the constant campus location
+  ({{ campus.name }}) by a trained cross-match model. Nothing is captured until you press the buttons below.
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h3 class="h5 mb-3">1. Reference location (constant)</h3>
+        <dl class="row mb-0 small">
+          <dt class="col-5 text-muted">Campus</dt>
+          <dd class="col-7">{{ campus.name }}</dd>
+          <dt class="col-5 text-muted">Address</dt>
+          <dd class="col-7">{{ campus.address }}</dd>
+          <dt class="col-5 text-muted">Latitude</dt>
+          <dd class="col-7">{{ '%.6f'|format(campus.latitude) }}</dd>
+          <dt class="col-5 text-muted">Longitude</dt>
+          <dd class="col-7">{{ '%.6f'|format(campus.longitude) }}</dd>
+          <dt class="col-5 text-muted">Campus radius</dt>
+          <dd class="col-7">{{ '%.0f'|format(campus.radius_m) }} m</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h3 class="h5 mb-3">2. Camera capture</h3>
+        <p class="text-muted small">The photo is optional evidence. It is stored privately and only you and the event organizer can view it.</p>
+        <div class="ratio ratio-4x3 mb-3 bg-light rounded overflow-hidden">
+          <video id="cameraPreview" class="w-100 h-100 object-fit-cover" playsinline muted autoplay hidden></video>
+          <img id="cameraStill" class="w-100 h-100 object-fit-cover" alt="Captured photo" hidden>
+          <div id="cameraPlaceholder" class="d-flex flex-column align-items-center justify-content-center text-muted h-100">
+            <span class="mb-1">Camera is off</span>
+            <small>Nothing is recorded until you start it.</small>
+          </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-outline-primary btn-sm" id="startCameraBtn">Start camera</button>
+          <button type="button" class="btn btn-primary btn-sm" id="captureBtn" disabled>Capture photo</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="retakeBtn" hidden>Retake</button>
+          <button type="button" class="btn btn-outline-danger btn-sm" id="stopCameraBtn" disabled>Stop camera</button>
+        </div>
+        <p class="small text-muted mt-2 mb-0" id="cameraStatus">Camera access is requested only when you press Start camera.</p>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 mb-3">3. Location to compare</h3>
+        <p class="text-muted small">Use your current position, or generate a random shot to test the model.</p>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-outline-primary" id="locateBtn">Use my current location</button>
+          <button type="button" class="btn btn-outline-secondary" id="randomShotBtn">Random shot (demo)</button>
+        </div>
+        <p class="small text-muted mt-3 mb-0" id="locationStatus">Location access is requested only when you press the button.</p>
+        <dl class="row mt-3 mb-0 small" id="locationDetails" hidden>
+          <dt class="col-5 text-muted">Latitude</dt>
+          <dd class="col-7" id="candidateLat">&ndash;</dd>
+          <dt class="col-5 text-muted">Longitude</dt>
+          <dd class="col-7" id="candidateLng">&ndash;</dd>
+          <dt class="col-5 text-muted">Accuracy</dt>
+          <dd class="col-7" id="candidateAccuracy">&ndash;</dd>
+          <dt class="col-5 text-muted">Source</dt>
+          <dd class="col-7" id="candidateSource">&ndash;</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h3 class="h5 mb-3">4. Cross-match result</h3>
+        <button type="button" class="btn btn-success mb-3" id="checkBtn" disabled>Compare with campus location</button>
+        <p class="small text-muted" id="resultStatus">Select a location first, then run the comparison.</p>
+        <div id="resultPanel" hidden>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <span class="badge fs-6" id="verdictBadge">&nbsp;</span>
+            <div class="flex-grow-1">
+              <div class="progress" role="progressbar" aria-label="Match probability" style="height: 1.4rem;">
+                <div class="progress-bar" id="probabilityBar" style="width: 0%">0%</div>
+              </div>
+            </div>
+          </div>
+          <dl class="row small mb-0">
+            <dt class="col-5 text-muted">Distance from campus</dt>
+            <dd class="col-7" id="resultDistance">&ndash;</dd>
+            <dt class="col-5 text-muted">Match probability</dt>
+            <dd class="col-7" id="resultProbability">&ndash;</dd>
+            <dt class="col-5 text-muted">Compared against</dt>
+            <dd class="col-7" id="resultCampus">&ndash;</dd>
+            <dt class="col-5 text-muted">Model</dt>
+            <dd class="col-7" id="resultModel">&ndash;</dd>
+            <dt class="col-5 text-muted">Simulated shot</dt>
+            <dd class="col-7" id="resultSimulated">&ndash;</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h3 class="h5 mb-3">Model details</h3>
+        <dl class="row small mb-0">
+          <dt class="col-6 text-muted">Model version</dt>
+          <dd class="col-6">{{ model_info.version }}</dd>
+          <dt class="col-6 text-muted">Validation accuracy</dt>
+          <dd class="col-6">{{ model_info.accuracy }}%</dd>
+          <dt class="col-6 text-muted">Learned decision radius</dt>
+          <dd class="col-6">{{ '%.0f'|format(model_info.decision_radius_m) }} m</dd>
+          <dt class="col-6 text-muted">Training samples</dt>
+          <dd class="col-6">{{ model_info.training_samples }}</dd>
+          <dt class="col-6 text-muted">Decision threshold</dt>
+          <dd class="col-6">{{ threshold }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 mb-3">Your recent verifications</h3>
+        <div class="table-responsive">
+          <table class="table table-sm table-striped align-middle mb-0">
+            <thead class="table-primary">
+              <tr>
+                <th>Event</th>
+                <th>Verdict</th>
+                <th>Distance</th>
+                <th>When</th>
+                <th>Photo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for record in records %}
+                <tr>
+                  <td>{{ record.event.title }}</td>
+                  <td>
+                    {% if record.verdict == 'match' %}
+                      <span class="badge bg-success">Match</span>
+                    {% else %}
+                      <span class="badge bg-danger">Mismatch</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ '%.0f'|format(record.distance_m) }} m</td>
+                  <td>{{ record.captured_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    {% if record.image_path %}
+                      <a href="{{ url_for('verification.verification_image', verification_id=record.id) }}" target="_blank" rel="noopener">View</a>
+                    {% else %}
+                      <span class="text-muted">&ndash;</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-3">No verifications recorded yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script src="{{ url_for('static', filename='js/verification.js') }}"></script>
+{% endblock %}

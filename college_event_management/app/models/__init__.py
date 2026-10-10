@@ -96,6 +96,56 @@ class Registration(db.Model):
     teacher = db.relationship('User', foreign_keys=[teacher_id], backref=db.backref('reviewed_registrations', lazy=True))
 
 
+class GeoVerification(db.Model):
+    """A cross-match result between the campus and a captured geolocation."""
+
+    __tablename__ = 'geo_verifications'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'), nullable=False)
+    source = db.Column(
+        db.Enum('device', 'random_shot', name='verification_source'),
+        nullable=False,
+        default='device',
+        server_default='device',
+    )
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    accuracy_m = db.Column(db.Float, nullable=True)
+    distance_m = db.Column(db.Float, nullable=False)
+    match_probability = db.Column(db.Float, nullable=False)
+    verdict = db.Column(
+        db.Enum('match', 'mismatch', name='verification_verdict'),
+        nullable=False,
+    )
+    model_version = db.Column(db.String(40), nullable=False)
+    campus_name = db.Column(db.String(160), nullable=False)
+    campus_latitude = db.Column(db.Float, nullable=False)
+    campus_longitude = db.Column(db.Float, nullable=False)
+    image_path = db.Column(db.String(255), nullable=True)
+    captured_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'event_id', name='uq_user_event_geo_verification'),
+        CheckConstraint('latitude >= -90 AND latitude <= 90', name='verification_latitude_check'),
+        CheckConstraint(
+            'longitude >= -180 AND longitude <= 180', name='verification_longitude_check'
+        ),
+    )
+
+    user = db.relationship(
+        'User',
+        foreign_keys=[user_id],
+        backref=db.backref('geo_verifications', lazy=True),
+    )
+    event = db.relationship(
+        'Event',
+        foreign_keys=[event_id],
+        backref=db.backref('geo_verifications', lazy=True, cascade='all, delete-orphan'),
+    )
+
+
 class Feedback(db.Model):
     __tablename__ = 'feedback'
 

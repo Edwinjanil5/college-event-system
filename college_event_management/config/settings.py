@@ -1,6 +1,7 @@
 import os
 import secrets
 import sys
+import tempfile
 from datetime import timedelta
 
 from dotenv import load_dotenv
@@ -26,6 +27,26 @@ def _database_uri():
         if relative_path and relative_path != ':memory:' and not os.path.isabs(relative_path):
             value = 'sqlite:///' + os.path.join(BASE_DIR, relative_path)
     return value
+
+
+def _writable_folder(preferred_name):
+    """Return ``preferred_name`` when it is writable, else a temp folder.
+
+    Serverless deployments ship a read-only project directory, so the trained
+    model cache has to fall back to a writable location.
+    """
+    preferred = os.path.join(BASE_DIR, preferred_name)
+    try:
+        os.makedirs(preferred, exist_ok=True)
+        probe = os.path.join(preferred, '.write-probe')
+        with open(probe, 'w', encoding='utf-8') as handle:
+            handle.write('ok')
+        os.remove(probe)
+        return preferred
+    except OSError:
+        fallback = os.path.join(tempfile.gettempdir(), 'campuspulse')
+        os.makedirs(fallback, exist_ok=True)
+        return fallback
 
 
 class Config:
@@ -54,3 +75,21 @@ class Config:
     SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'edwinjanil5@gmail.com')
     SUPPORT_PHONE = os.getenv('SUPPORT_PHONE', '8138815144')
     GOOGLE_SITE_VERIFICATION = os.getenv('GOOGLE_SITE_VERIFICATION', '')
+
+    # Constant reference geolocation used by the geolocation cross-match model.
+    CAMPUS_NAME = os.getenv('CAMPUS_NAME', 'College of Applied Science, Adoor')
+    CAMPUS_ADDRESS = os.getenv(
+        'CAMPUS_ADDRESS',
+        'Parthasarathy Road, Kannamkode, Adoor, Pathanamthitta, Kerala 691523',
+    )
+    CAMPUS_LATITUDE = float(os.getenv('CAMPUS_LATITUDE', '9.1553906'))
+    CAMPUS_LONGITUDE = float(os.getenv('CAMPUS_LONGITUDE', '76.7310322'))
+    CAMPUS_RADIUS_M = float(os.getenv('CAMPUS_RADIUS_M', '250'))
+    GEO_MATCH_THRESHOLD = float(os.getenv('GEO_MATCH_THRESHOLD', '0.5'))
+    GEO_MODEL_FOLDER = os.getenv('GEO_MODEL_FOLDER') or _writable_folder('data')
+    MAX_VERIFICATION_IMAGE_BYTES = int(
+        os.getenv('MAX_VERIFICATION_IMAGE_BYTES', str(400 * 1024))
+    )
+    ATTENDANCE_FOLDER = (
+        os.getenv('ATTENDANCE_FOLDER') or _writable_folder(os.path.join('uploads', 'attendance'))
+    )

@@ -175,6 +175,7 @@ def create_app(test_config=None):
     from app.controllers.hod import hod_bp
     from app.controllers.admin import admin_bp
     from app.controllers.reports import reports_bp
+    from app.controllers.verification import verification_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp, url_prefix='/student')
@@ -182,6 +183,7 @@ def create_app(test_config=None):
     app.register_blueprint(hod_bp, url_prefix='/hod')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(reports_bp, url_prefix='/reports')
+    app.register_blueprint(verification_bp, url_prefix='/verify')
     app.register_blueprint(assistant_bp, url_prefix='/assistant')
 
     @app.before_request
@@ -195,6 +197,12 @@ def create_app(test_config=None):
     def add_security_headers(response):
         response.headers.setdefault('X-Content-Type-Options', 'nosniff')
         response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+        # Location verification needs camera and geolocation; allow them only
+        # for this origin and never expose the microphone.
+        response.headers.setdefault(
+            'Permissions-Policy',
+            'camera=(self), geolocation=(self), microphone=()',
+        )
         if request.path not in PUBLIC_INDEXABLE_PATHS:
             response.headers.setdefault('X-Robots-Tag', 'noindex, nofollow')
         response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
@@ -248,6 +256,7 @@ def create_app(test_config=None):
                 'Disallow: /hod',
                 'Disallow: /organizer',
                 'Disallow: /student',
+                'Disallow: /verify',
                 'Disallow: /reports',
                 'Disallow: /assistant',
                 'Disallow: /health',

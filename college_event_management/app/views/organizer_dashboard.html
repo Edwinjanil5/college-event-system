@@ -118,6 +118,9 @@
             {% endif %}
           </td>
           <td>
+            {% if event.status in ['approved', 'completed'] %}
+              <a class="btn btn-outline-primary btn-sm" href="{{ url_for('organizer.event_verifications', event_id=event.id) }}">Verifications</a>
+            {% endif %}
             {% if event.status == 'approved' %}
               <form method="post" action="{{ url_for('organizer.mark_event_completed', event_id=event.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

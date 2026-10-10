@@ -42,6 +42,30 @@ CREATE TABLE IF NOT EXISTS registrations (
     CONSTRAINT fk_registrations_teacher FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS geo_verifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    source ENUM('device', 'random_shot') NOT NULL DEFAULT 'device',
+    latitude DOUBLE NOT NULL,
+    longitude DOUBLE NOT NULL,
+    accuracy_m DOUBLE,
+    distance_m DOUBLE NOT NULL,
+    match_probability DOUBLE NOT NULL,
+    verdict ENUM('match', 'mismatch') NOT NULL,
+    model_version VARCHAR(40) NOT NULL,
+    campus_name VARCHAR(160) NOT NULL,
+    campus_latitude DOUBLE NOT NULL,
+    campus_longitude DOUBLE NOT NULL,
+    image_path VARCHAR(255),
+    captured_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, event_id),
+    CONSTRAINT fk_geo_verifications_user FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT fk_geo_verifications_event FOREIGN KEY (event_id) REFERENCES events(id),
+    CONSTRAINT geo_verification_latitude_check CHECK (latitude >= -90 AND latitude <= 90),
+    CONSTRAINT geo_verification_longitude_check CHECK (longitude >= -180 AND longitude <= 180)
+);
+
 CREATE TABLE IF NOT EXISTS feedback (
     id INT AUTO_INCREMENT PRIMARY KEY,
     event_id INT NOT NULL,

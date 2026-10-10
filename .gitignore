@@ -20,6 +20,10 @@ htmlcov/
 *.sqlite3
 **/static/uploads/
 
+# Trained geolocation model cache and captured attendance photos
+**/data/
+**/uploads/
+
 # Build and release output
 build/
 dist/

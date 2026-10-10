@@ -13,6 +13,9 @@ CampusPulse is a Flask-based college event-management application with student, 
 - Class teacher approval queue built into the organizer dashboard itself
 - Immediate confirmation for regular organizers whose events have no class teacher
 - Student cancellation of pending or confirmed registrations
+- Geolocation cross-match attendance verification with on-device camera capture
+- Self-trained ML model comparing the campus location against random or device shots
+- Random-shot mode to demonstrate the cross-match without a device GPS
 - Feedback only for registered students and completed events
 - PA point calculation and PDF/Excel report generation
 - Real CSRF protection for state-changing requests

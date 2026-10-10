@@ -90,6 +90,7 @@
                   {% if event.ticket_fee and event.ticket_fee > 0 %}
                     <a href="{{ url_for('student.payment_info', event_id=event.id) }}" class="btn btn-warning btn-sm">Payment information</a>
                   {% endif %}
+                  <a href="{{ url_for('verification.verify_event', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">Verify location</a>
                 {% elif event.id in pending_teacher_event_ids %}
                   <span class="badge bg-warning text-dark">Awaiting teacher approval</span>
                   <form method="post" action="{{ url_for('student.cancel_registration', event_id=event.id) }}">

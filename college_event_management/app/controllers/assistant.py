@@ -116,6 +116,30 @@ KNOWLEDGE_BASE = (
         'links': (('organizer.dashboard', 'Open Organizer Dashboard'), ('how_to_use', 'Read the organizer guide')),
     },
     {
+        'id': 'verify_location',
+        'phrases': (
+            'verify location', 'location verification', 'verify attendance',
+            'attendance verification', 'check my location', 'camera access',
+            'geolocation', 'cross match', 'location proof', 'verify my presence',
+            'geo location', 'gps check',
+        ),
+        'keywords': (
+            'location', 'geolocation', 'gps', 'camera', 'photo', 'attendance',
+            'verify', 'cross', 'match', 'campus', 'dooroor', 'adoor',
+        ),
+        'answer': (
+            'Open Verify location from a confirmed event on the Student Dashboard. The page '
+            'shows the constant campus geolocation of College of Applied Science, Adoor. Press '
+            'Start camera and Use my current location to grant camera and location access, and '
+            'the photo is taken only when you capture it. A trained machine learning model '
+            'then cross-matches the two geolocations and reports match or mismatch with the '
+            'distance and probability. Random shot generates a random geolocation so the model '
+            'can be tested without a device GPS. Photos are private and visible only to you '
+            'and the organizer of that event.'
+        ),
+        'links': (('student.dashboard', 'Open Student Dashboard'), ('how_to_use', 'Read the student guide')),
+    },
+    {
         'id': 'create_event',
         'phrases': (
             'create an event', 'create event', 'add an event', 'organizer event', 'submit an event',

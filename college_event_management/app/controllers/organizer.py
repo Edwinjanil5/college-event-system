@@ -5,7 +5,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.controllers.auth import role_required
-from app.models import Event, Registration, db
+from app.models import Event, GeoVerification, Registration, db
 from app.workflow import InvalidEventTransition, transition_event, utcnow
 
 
@@ -107,6 +107,30 @@ def review_registration(registration_id):
     else:
         flash(f'Declined {registration.user.name} for {event.title}.', 'warning')
     return redirect(url_for('organizer.dashboard'))
+
+
+@organizer_bp.route('/events/<int:event_id>/verifications')
+@role_required('organizer')
+def event_verifications(event_id):
+    event = Event.query.filter_by(id=event_id).first_or_404()
+    if event.organizer_id != current_user.id:
+        flash('You cannot view attendance verifications for another organizer\'s event.', 'danger')
+        return redirect(url_for('organizer.dashboard'))
+
+    records = (
+        GeoVerification.query
+        .filter_by(event_id=event.id)
+        .order_by(GeoVerification.captured_at.desc())
+        .all()
+    )
+    matched = sum(1 for record in records if record.verdict == 'match')
+    return render_template(
+        'event_verifications.html',
+        event=event,
+        records=records,
+        matched=matched,
+        unmatched=len(records) - matched,
+    )
 
 
 @organizer_bp.route('/events/new', methods=['GET', 'POST'])
