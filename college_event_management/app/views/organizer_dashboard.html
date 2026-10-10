@@ -5,7 +5,7 @@
     <h2 class="mb-1 text-primary">Organizer Dashboard</h2>
     <p class="text-secondary mb-0">Submit new events and manage their status.</p>
     <span class="badge mt-2 {% if current_user.is_class_incharge %}bg-success{% else %}bg-secondary{% endif %}">
-      {{ 'Class incharge' if current_user.is_class_incharge else 'Regular organizer' }}
+      {{ 'Class teacher' if current_user.is_class_incharge else 'Regular organizer' }}
     </span>
   </div>
   <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newEventModal">Add Event</button>
@@ -14,12 +14,12 @@
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
     <div>
-      <h3 class="h5 mb-1">Organizer profile</h3>
-      <p class="text-muted mb-md-0">Tell CampusPulse whether you organize events as a class incharge. Student registration requests for your events appear here for your approval.</p>
+      <h3 class="h5 mb-1">Class teacher status</h3>
+      <p class="text-muted mb-md-0">Choose <strong>Yes</strong> if you are the class teacher of the students registering for your events. Their request stays pending until you approve it on this dashboard.</p>
     </div>
     <form method="post" action="{{ url_for('organizer.update_class_incharge_status') }}" class="d-flex align-items-center gap-2">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="form-label mb-0 text-nowrap" for="classInchargeStatus">Class incharge?</label>
+      <label class="form-label mb-0 text-nowrap" for="classInchargeStatus">Class teacher?</label>
       <select class="form-select" id="classInchargeStatus" name="class_incharge_status" style="min-width: 9rem;">
         <option value="no" {% if not current_user.is_class_incharge %}selected{% endif %}>No</option>
         <option value="yes" {% if current_user.is_class_incharge %}selected{% endif %}>Yes</option>
@@ -29,6 +29,7 @@
   </div>
 </div>
 
+{% if current_user.is_class_incharge %}
 {% if teacher_requests %}
 <section class="card border-0 shadow-sm mb-4">
   <div class="card-body">
@@ -73,6 +74,15 @@
     </div>
   </div>
 </section>
+{% else %}
+<div class="alert alert-success border-0 shadow-sm mb-4" role="status">
+  You are marked as the <strong>class teacher</strong>. Every student registration for your events waits for your approval before the place is confirmed. No requests are pending right now.
+</div>
+{% endif %}
+{% else %}
+<div class="alert alert-info border-0 shadow-sm mb-4" role="status">
+  You are set as a regular organizer, so student registrations for your events are confirmed immediately. Switch <strong>Class teacher</strong> to <strong>Yes</strong> above if you must approve each registration before a student's place is confirmed.
+</div>
 {% endif %}
 
 <div class="row g-4 mb-4">

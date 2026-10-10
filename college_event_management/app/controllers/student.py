@@ -10,6 +10,19 @@ from app.workflow import utcnow
 student_bp = Blueprint('student', __name__)
 
 
+def class_teacher_for_event(event):
+    """Return the class teacher who must approve registrations for this event.
+
+    The organizer dashboard lets an organizer declare themselves the class
+    teacher ("Class incharge"). Only those organizers sit in the approval loop
+    for their own events, so regular organizers confirm students immediately.
+    """
+    organizer = event.organizer
+    if organizer is not None and organizer.is_class_incharge:
+        return organizer
+    return None
+
+
 def can_register_for_event(event, now=None):
     current_time = now or utcnow()
     registration_count = Registration.query.filter(
@@ -61,6 +74,9 @@ def dashboard():
         feedback.event_id
         for feedback in Feedback.query.filter_by(user_id=current_user.id).all()
     }
+    teacher_approval_event_ids = {
+        event.id for event in events if class_teacher_for_event(event) is not None
+    }
     return render_template(
         'student_dashboard.html',
         events=events,
@@ -69,6 +85,7 @@ def dashboard():
         pending_teacher_event_ids=pending_teacher_event_ids,
         rejected_event_ids=rejected_event_ids,
         registration_by_event=registration_by_event,
+        teacher_approval_event_ids=teacher_approval_event_ids,
         completed_events=completed_events,
         feedback_event_ids=feedback_event_ids,
     )
@@ -83,14 +100,11 @@ def register_for_event(event_id):
         flash('This event is not open for registration.', 'danger')
         return redirect(url_for('student.dashboard'))
 
-    teacher = event.organizer
-    if teacher is None:
-        flash('This event does not have an assigned class teacher yet.', 'danger')
-        return redirect(url_for('student.dashboard'))
+    teacher = class_teacher_for_event(event)
 
     existing = Registration.query.filter_by(user_id=current_user.id, event_id=event.id).first()
     if existing and existing.status == 'approved':
-        flash('Your teacher has already approved your registration for this event.', 'info')
+        flash('Your registration for this event is already confirmed.', 'info')
         return redirect(url_for('student.dashboard'))
     if existing and existing.status == 'pending_teacher':
         flash('Your registration request is already waiting for class teacher approval.', 'info')
@@ -98,19 +112,24 @@ def register_for_event(event_id):
 
     if existing and existing.status == 'rejected':
         existing.status = 'pending_teacher'
-        existing.teacher_id = teacher.id
+        existing.teacher_id = teacher.id if teacher else None
         existing.registered_at = utcnow()
         existing.reviewed_at = None
         existing.teacher_note = None
         db.session.commit()
-        flash(f'Registration request resent to {teacher.name} for approval.', 'success')
+        flash(
+            f'Registration request resent to {teacher.name} for approval.'
+            if teacher
+            else 'Registration request submitted.',
+            'success',
+        )
         return redirect(url_for('student.dashboard'))
 
     registration = Registration(
         user_id=current_user.id,
         event_id=event.id,
-        status='pending_teacher',
-        teacher_id=teacher.id,
+        status='pending_teacher' if teacher else 'approved',
+        teacher_id=teacher.id if teacher else None,
     )
     db.session.add(registration)
     try:
@@ -120,7 +139,14 @@ def register_for_event(event_id):
         flash('You already have a registration request for this event.', 'warning')
         return redirect(url_for('student.dashboard'))
 
-    flash(f'Registration request sent to {teacher.name} for class teacher approval.', 'success')
+    if teacher:
+        flash(
+            f'Registration request sent to {teacher.name} for class teacher approval. '
+            'You will be confirmed once the class teacher approves it.',
+            'success',
+        )
+    else:
+        flash('Successfully registered for the event.', 'success')
     return redirect(url_for('student.dashboard'))
 
 

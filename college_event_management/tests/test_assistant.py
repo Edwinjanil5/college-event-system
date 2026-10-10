@@ -17,7 +17,7 @@ def test_assistant_explains_class_incharge_setting(client):
     assert response.status_code == 200
     payload = response.get_json()
     assert payload['topic'] == 'class_incharge'
-    assert 'Organizer profile' in payload['answer']
+    assert 'Class teacher status' in payload['answer']
 
 
 def test_assistant_has_safe_fallback_for_unknown_question(client):

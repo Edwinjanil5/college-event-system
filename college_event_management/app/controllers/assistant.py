@@ -107,9 +107,11 @@ KNOWLEDGE_BASE = (
         ),
         'keywords': ('class', 'incharge', 'teacher', 'profile', 'organizer', 'status'),
         'answer': (
-            'Open your Organizer Dashboard and use the Organizer profile card. In the Class '
-            'incharge dropdown choose Yes or No, then select Save. Student registration requests '
-            'for your events are shown in the same dashboard for class teacher approval.'
+            'Open your Organizer Dashboard and use the Class teacher status card. Choose Yes if '
+            'you are the class teacher of the students registering for your events, then select '
+            'Save. With Yes, every student registration waits for your approval and the requests '
+            'appear in the same dashboard. With No, student registrations are confirmed '
+            'immediately because you are not acting as their class teacher.'
         ),
         'links': (('organizer.dashboard', 'Open Organizer Dashboard'), ('how_to_use', 'Read the organizer guide')),
     },
@@ -151,10 +153,11 @@ KNOWLEDGE_BASE = (
         ),
         'keywords': ('student', 'event', 'register', 'registration', 'join', 'seat', 'available', 'participate'),
         'answer': (
-            'Open the Student Dashboard and choose Request registration on an approved upcoming '
-            'event. Your request is sent to the class teacher for the event organizer. Your place '
-            'is confirmed only after the teacher approves it. Registration requests are allowed '
-            'before the deadline and while seats remain; each student can request once per event.'
+            'Open the Student Dashboard and choose Register on an approved upcoming event. When '
+            'the organizer is marked as the class teacher, the button becomes Request approval '
+            'and your place is confirmed only after that class teacher approves it on their '
+            'dashboard. You can cancel a pending or confirmed registration before the deadline, '
+            'and each student can register once per event.'
         ),
         'links': (('auth.login', 'Open Student Login'), ('how_to_use', 'Read the student guide')),
     },

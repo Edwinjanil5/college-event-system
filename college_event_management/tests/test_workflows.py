@@ -108,6 +108,7 @@ def test_rejected_registration_can_be_resubmitted(client, app, user_factory):
     with app.app_context():
         student = user_factory('student', 'resubmit@example.com')
         organizer = user_factory('organizer', 'resubmit-teacher@example.com')
+        organizer.is_class_incharge = True
         db.session.add_all([student, organizer])
         db.session.commit()
         event = Event(
@@ -151,6 +152,8 @@ def test_teacher_cannot_review_another_organizers_request(client, app, user_fact
         student = user_factory('student', 'ownership-student@example.com')
         owner = user_factory('organizer', 'request-owner@example.com')
         other = user_factory('organizer', 'other-teacher@example.com')
+        owner.is_class_incharge = True
+        other.is_class_incharge = True
         db.session.add_all([student, owner, other])
         db.session.commit()
         event = Event(
@@ -175,6 +178,132 @@ def test_teacher_cannot_review_another_organizers_request(client, app, user_fact
     other_client = app.test_client()
     login(other_client, 'other-teacher@example.com')
     response = other_client.post(
+        f'/organizer/registrations/{registration_id}/review',
+        data={'action': 'approve'},
+    )
+    assert response.status_code == 302
+    with app.app_context():
+        assert db.session.get(Registration, registration_id).status == 'pending_teacher'
+
+
+def test_regular_organizer_confirms_registration_without_approval(client, app, user_factory):
+    with app.app_context():
+        student = user_factory('student', 'regular-organizer-student@example.com')
+        organizer = user_factory('organizer', 'regular-organizer@example.com')
+        db.session.add_all([student, organizer])
+        db.session.commit()
+        event = Event(
+            title='Regular organizer event',
+            venue='Hall',
+            event_date=utcnow() + timedelta(days=3),
+            registration_deadline=utcnow() + timedelta(days=2),
+            max_participants=20,
+            organizer_id=organizer.id,
+            status='approved',
+        )
+        db.session.add(event)
+        db.session.commit()
+        event_id = event.id
+        student_id = student.id
+
+    login(client, 'regular-organizer-student@example.com')
+    response = client.post(f'/student/events/{event_id}/register')
+    assert response.status_code == 302
+
+    with app.app_context():
+        registration = Registration.query.filter_by(
+            user_id=student_id,
+            event_id=event_id,
+        ).first()
+        assert registration.status == 'approved'
+        assert registration.teacher_id is None
+
+    dashboard = client.get('/student/dashboard')
+    assert dashboard.status_code == 200
+    assert b'Awaiting teacher approval' not in dashboard.data
+    assert b'Confirmed' in dashboard.data
+
+    organizer_client = app.test_client()
+    login(organizer_client, 'regular-organizer@example.com')
+    organizer_dashboard = organizer_client.get('/organizer/dashboard')
+    assert b'regular organizer, so student registrations' in organizer_dashboard.data
+
+
+def test_class_teacher_toggle_controls_the_approval_gate(client, app, user_factory):
+    with app.app_context():
+        student = user_factory('student', 'toggle-student@example.com')
+        organizer = user_factory('organizer', 'toggle-organizer@example.com')
+        db.session.add_all([student, organizer])
+        db.session.commit()
+        event = Event(
+            title='Toggle event',
+            venue='Hall',
+            event_date=utcnow() + timedelta(days=3),
+            registration_deadline=utcnow() + timedelta(days=2),
+            max_participants=20,
+            organizer_id=organizer.id,
+            status='approved',
+        )
+        db.session.add(event)
+        db.session.commit()
+        event_id = event.id
+
+    login(client, 'toggle-student@example.com')
+    client.post(f'/student/events/{event_id}/register')
+    with app.app_context():
+        assert Registration.query.filter_by(event_id=event_id).first().status == 'approved'
+        db.session.query(Registration).filter_by(event_id=event_id).delete()
+        db.session.commit()
+
+    organizer_client = app.test_client()
+    login(organizer_client, 'toggle-organizer@example.com')
+    organizer_client.post(
+        '/organizer/profile/class-incharge',
+        data={'class_incharge_status': 'yes'},
+    )
+    empty_panel = organizer_client.get('/organizer/dashboard')
+    assert b'No requests are pending right now' in empty_panel.data
+
+    client.post(f'/student/events/{event_id}/register')
+    with app.app_context():
+        assert Registration.query.filter_by(event_id=event_id).first().status == 'pending_teacher'
+
+    pending_panel = organizer_client.get('/organizer/dashboard')
+    assert b'Class teacher approval requests' in pending_panel.data
+
+
+def test_class_teacher_must_be_marked_before_reviewing_requests(client, app, user_factory):
+    with app.app_context():
+        student = user_factory('student', 'flag-student@example.com')
+        organizer = user_factory('organizer', 'flag-organizer@example.com')
+        organizer.is_class_incharge = True
+        db.session.add_all([student, organizer])
+        db.session.commit()
+        event = Event(
+            title='Flag event',
+            venue='Hall',
+            event_date=utcnow() + timedelta(days=3),
+            registration_deadline=utcnow() + timedelta(days=2),
+            max_participants=20,
+            organizer_id=organizer.id,
+            status='approved',
+        )
+        db.session.add(event)
+        db.session.commit()
+        event_id = event.id
+
+    login(client, 'flag-student@example.com')
+    client.post(f'/student/events/{event_id}/register')
+    with app.app_context():
+        registration_id = Registration.query.filter_by(event_id=event_id).first().id
+
+    organizer_client = app.test_client()
+    login(organizer_client, 'flag-organizer@example.com')
+    organizer_client.post(
+        '/organizer/profile/class-incharge',
+        data={'class_incharge_status': 'no'},
+    )
+    response = organizer_client.post(
         f'/organizer/registrations/{registration_id}/review',
         data={'action': 'approve'},
     )

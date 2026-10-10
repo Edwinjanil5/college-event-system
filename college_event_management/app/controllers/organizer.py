@@ -79,6 +79,13 @@ def review_registration(registration_id):
     if registration.teacher_id != current_user.id and event.organizer_id != current_user.id:
         flash('You cannot review a registration for another class teacher.', 'danger')
         return redirect(url_for('organizer.dashboard'))
+    if not current_user.is_class_incharge:
+        flash(
+            'Set "Class teacher" to Yes in your organizer profile before reviewing '
+            'student registration requests.',
+            'warning',
+        )
+        return redirect(url_for('organizer.dashboard'))
     if registration.status != 'pending_teacher':
         flash('This registration request has already been reviewed.', 'info')
         return redirect(url_for('organizer.dashboard'))
