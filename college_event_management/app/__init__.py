@@ -1,6 +1,6 @@
 import os
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 import click
 from flask import Flask, Response, make_response, redirect, render_template, request, session, url_for
@@ -91,6 +91,62 @@ def register_cli_commands(app):
         user.password_hash = generate_password_hash(password).decode('utf-8')
         db.session.commit()
         click.echo(f'Password updated for administrator {email}.')
+
+    @app.cli.command('purge-verification-records')
+    @click.option('--days', type=int, default=None, help='Override the configured retention period.')
+    def purge_verification_records(days):
+        """Delete expired location verifications and their stored photos.
+
+        Location data is sensitive, so it is removed automatically after the
+        configured retention period. Run this from a scheduler or Task Scheduler.
+        """
+        from app.models import GeoVerification
+
+        retention_days = days if days is not None else app.config.get('VERIFICATION_RETENTION_DAYS', 180)
+        retention_days = max(0, int(retention_days or 0))
+        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=retention_days)
+
+        removed = 0
+        photos = 0
+        for record in GeoVerification.query.filter(GeoVerification.captured_at < cutoff).all():
+            if record.image_path:
+                folder = app.config.get('ATTENDANCE_FOLDER')
+                if folder:
+                    path = os.path.join(folder, record.image_path)
+                    try:
+                        if os.path.isfile(path):
+                            os.remove(path)
+                            photos += 1
+                    except OSError:
+                        app.logger.warning('Could not remove verification photo')
+            db.session.delete(record)
+            removed += 1
+        db.session.commit()
+        click.echo(
+            f'Retention window {retention_days} days: removed {removed} verification record(s) '
+            f'and {photos} photo(s) older than {cutoff:%Y-%m-%d %H:%M} UTC.'
+        )
+
+    @app.cli.command('verification-status')
+    def verification_status():
+        """Report the verification configuration without touching personal data."""
+        from app.campus import campus_from_config
+        from app.controllers.verification import campus_settings
+        from app.image_verification import list_reference_images
+
+        campus = campus_from_config(app.config)
+        folder = app.config.get('REFERENCE_IMAGE_FOLDER', '')
+        references = list_reference_images(folder)
+        click.echo(f'Campus reference : {campus.latitude}, {campus.longitude} ({campus.name})')
+        click.echo(f'Boundary source  : {campus.boundary_source}')
+        click.echo(f'Radius           : {campus.radius_m:.0f} m')
+        click.echo(
+            f'Reliable accuracy: {app.config.get("GPS_MAX_RELIABLE_ACCURACY_M")} m'
+        )
+        click.echo(f'Image backend    : {app.config.get("IMAGE_EMBEDDING_BACKEND")}')
+        click.echo(f'Reference folder : {folder}')
+        click.echo(f'Reference images : {len(references)} {references}')
+        click.echo(f'Retention (days) : {app.config.get("VERIFICATION_RETENTION_DAYS")}')
 
     @app.cli.command('create-hod')
     @click.option('--email', prompt='HoD email')

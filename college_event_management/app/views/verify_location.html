@@ -3,16 +3,27 @@
 <div id="verifyApp" data-verify-event="{{ event.id }}">
 <div class="page-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
   <div>
-    <h2 class="mb-1 text-primary">Verify attendance location</h2>
+    <h2 class="mb-1 text-primary">Verify attendance evidence</h2>
     <p class="text-secondary mb-0">{{ event.title }} &middot; {{ event.venue }}</p>
   </div>
   <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">Back to dashboard</a>
 </div>
 
 <div class="alert alert-info border-0 shadow-sm" role="note">
-  <strong>How this works.</strong> Your device captures one photo and one location reading.
-  The geolocation is compared against the constant campus location
-  ({{ campus.name }}) by a trained cross-match model. Nothing is captured until you press the buttons below.
+  <strong>Why we ask.</strong> Your class teacher confirms your registration, and organizers need to know
+  that a student taking part in an event was near the campus. We therefore compare one location reading
+  and, if you choose to attach one, one photo against reference pictures of the campus.
+  <br>
+  <strong class="text-muted">Your location is only read when you press the button below, is used for this
+  event only, and is deleted automatically after {{ retention_days }} days. It is never tracked in the
+  background. Camera access is optional and the photo is sent only when you run the comparison.</strong>
+</div>
+
+<div class="alert alert-warning border-0 shadow-sm" role="note">
+  A location match and a similar photo are <strong>indicative signals, not proof</strong> that you were on
+  campus. Every submission is reviewed by a person, and an uncertain result is never treated as
+  misconduct. If GPS is inaccurate or location permission is unavailable, that is recorded as
+  &ldquo;inconclusive&rdquo; and a reviewer decides.
 </div>
 
 <div class="row g-4">
@@ -29,16 +40,27 @@
           <dd class="col-7">{{ '%.6f'|format(campus.latitude) }}</dd>
           <dt class="col-5 text-muted">Longitude</dt>
           <dd class="col-7">{{ '%.6f'|format(campus.longitude) }}</dd>
-          <dt class="col-5 text-muted">Campus radius</dt>
+          <dt class="col-5 text-muted">Radius</dt>
           <dd class="col-7">{{ '%.0f'|format(campus.radius_m) }} m</dd>
+          <dt class="col-5 text-muted">Boundary source</dt>
+          <dd class="col-7">
+            {% if campus.has_polygon %}Verified campus polygon{% else %}Reference point + radius{% endif %}
+          </dd>
         </dl>
       </div>
     </div>
 
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body">
-        <h3 class="h5 mb-3">2. Camera capture</h3>
-        <p class="text-muted small">The photo is optional evidence. It is stored privately and only you and the event organizer can view it.</p>
+        <h3 class="h5 mb-3">2. Photo (optional)</h3>
+        <p class="text-muted small">
+          {% if image_enabled %}
+            Compared with {{ reference_names|length }} campus reference
+            {{ 'image' if reference_names|length == 1 else 'images' }}. Visual similarity only.
+          {% else %}
+            No campus reference images are available yet, so the photo is stored as evidence but not compared.
+          {% endif %}
+        </p>
         <div class="ratio ratio-4x3 mb-3 bg-light rounded overflow-hidden">
           <video id="cameraPreview" class="w-100 h-100 object-fit-cover" playsinline muted autoplay hidden></video>
           <img id="cameraStill" class="w-100 h-100 object-fit-cover" alt="Captured photo" hidden>
@@ -83,64 +105,83 @@
   <div class="col-lg-7">
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body">
-        <h3 class="h5 mb-3">4. Cross-match result</h3>
-        <button type="button" class="btn btn-success mb-3" id="checkBtn" disabled>Compare with campus location</button>
-        <p class="small text-muted" id="resultStatus">Select a location first, then run the comparison.</p>
+        <h3 class="h5 mb-3">4. Verification result</h3>
+        <button type="button" class="btn btn-success mb-3" id="checkBtn" disabled>Run verification</button>
+        <p class="small text-muted" id="resultStatus">Select a location first, then run the verification.</p>
+        <div id="resultLoading" class="d-none mb-3">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status" aria-hidden="true"></div>
+          <span class="text-muted small">Checking location and comparing the photo&hellip;</span>
+        </div>
+
         <div id="resultPanel" hidden>
-          <div class="d-flex align-items-center gap-3 mb-3">
-            <span class="badge fs-6" id="verdictBadge">&nbsp;</span>
-            <div class="flex-grow-1">
-              <div class="progress" role="progressbar" aria-label="Match probability" style="height: 1.4rem;">
-                <div class="progress-bar" id="probabilityBar" style="width: 0%">0%</div>
-              </div>
-            </div>
+          <div class="border rounded p-3 mb-3">
+            <h4 class="h6 text-uppercase text-muted">Location check</h4>
+            <p class="mb-1"><span class="badge fs-6" id="gpsBadge">&nbsp;</span></p>
+            <dl class="row small mb-0">
+              <dt class="col-6 text-muted">Distance from campus</dt>
+              <dd class="col-6" id="gpsDistance">&ndash;</dd>
+              <dt class="col-6 text-muted">Reported accuracy</dt>
+              <dd class="col-6" id="gpsAccuracy">&ndash;</dd>
+              <dt class="col-6 text-muted">Note</dt>
+              <dd class="col-6" id="gpsReason">&ndash;</dd>
+            </dl>
           </div>
-          <dl class="row small mb-0">
-            <dt class="col-5 text-muted">Distance from campus</dt>
-            <dd class="col-7" id="resultDistance">&ndash;</dd>
-            <dt class="col-5 text-muted">Match probability</dt>
-            <dd class="col-7" id="resultProbability">&ndash;</dd>
-            <dt class="col-5 text-muted">Compared against</dt>
-            <dd class="col-7" id="resultCampus">&ndash;</dd>
-            <dt class="col-5 text-muted">Model</dt>
-            <dd class="col-7" id="resultModel">&ndash;</dd>
-            <dt class="col-5 text-muted">Simulated shot</dt>
-            <dd class="col-7" id="resultSimulated">&ndash;</dd>
-          </dl>
+
+          <div class="border rounded p-3 mb-3">
+            <h4 class="h6 text-uppercase text-muted">Photo comparison</h4>
+            <p class="mb-1"><span class="badge fs-6" id="imageBadge">&nbsp;</span></p>
+            <dl class="row small mb-0">
+              <dt class="col-6 text-muted">Closest reference</dt>
+              <dd class="col-6" id="imageReference">&ndash;</dd>
+              <dt class="col-6 text-muted">Similarity</dt>
+              <dd class="col-6" id="imageSimilarity">&ndash;</dd>
+              <dt class="col-6 text-muted">Reference images used</dt>
+              <dd class="col-6" id="imageCount">&ndash;</dd>
+              <dt class="col-6 text-muted">Note</dt>
+              <dd class="col-6" id="imageReason">&ndash;</dd>
+            </dl>
+            <small class="text-muted">Similarity is a visual comparison score, not a probability and not proof of origin.</small>
+          </div>
+
+          <div class="border rounded p-3">
+            <h4 class="h6 text-uppercase text-muted">Outcome</h4>
+            <p class="mb-1"><span class="badge fs-6 bg-primary" id="decisionBadge">&nbsp;</span></p>
+            <p class="small mb-1" id="decisionRationale"></p>
+            <p class="small text-muted mb-0" id="decisionMessage"></p>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body">
-        <h3 class="h5 mb-3">Model details</h3>
+        <h3 class="h5 mb-3">How this is decided</h3>
         <dl class="row small mb-0">
-          <dt class="col-6 text-muted">Model version</dt>
-          <dd class="col-6">{{ model_info.version }}</dd>
-          <dt class="col-6 text-muted">Validation accuracy</dt>
-          <dd class="col-6">{{ model_info.accuracy }}%</dd>
-          <dt class="col-6 text-muted">Learned decision radius</dt>
-          <dd class="col-6">{{ '%.0f'|format(model_info.decision_radius_m) }} m</dd>
-          <dt class="col-6 text-muted">Training samples</dt>
-          <dd class="col-6">{{ model_info.training_samples }}</dd>
-          <dt class="col-6 text-muted">Decision threshold</dt>
-          <dd class="col-6">{{ threshold }}</dd>
+          <dt class="col-7 text-muted">Campus radius</dt>
+          <dd class="col-5">{{ '%.0f'|format(campus.radius_m) }} m</dd>
+          <dt class="col-7 text-muted">Reliable GPS accuracy limit</dt>
+          <dd class="col-5">{{ '%.0f'|format(max_reliable_accuracy_m) }} m</dd>
+          <dt class="col-7 text-muted">Visual similarity threshold</dt>
+          <dd class="col-5">{{ similarity_threshold }}</dd>
+          <dt class="col-7 text-muted">Records retained</dt>
+          <dd class="col-5">{{ retention_days }} days</dd>
         </dl>
       </div>
     </div>
 
     <div class="card border-0 shadow-sm">
       <div class="card-body">
-        <h3 class="h5 mb-3">Your recent verifications</h3>
+        <h3 class="h5 mb-3">Your recent submissions</h3>
         <div class="table-responsive">
           <table class="table table-sm table-striped align-middle mb-0">
             <thead class="table-primary">
               <tr>
                 <th>Event</th>
-                <th>Verdict</th>
-                <th>Distance</th>
-                <th>When</th>
+                <th>Location</th>
                 <th>Photo</th>
+                <th>Outcome</th>
+                <th>When</th>
+                <th>Photo file</th>
               </tr>
             </thead>
             <tbody>
@@ -148,13 +189,37 @@
                 <tr>
                   <td>{{ record.event.title }}</td>
                   <td>
-                    {% if record.verdict == 'match' %}
+                    {% if record.gps_status == 'LOCATION_MATCH' %}
                       <span class="badge bg-success">Match</span>
-                    {% else %}
+                    {% elif record.gps_status == 'LOCATION_MISMATCH' %}
                       <span class="badge bg-danger">Mismatch</span>
+                    {% elif record.gps_status == 'MISSING' %}
+                      <span class="badge bg-secondary">Not provided</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Inconclusive</span>
                     {% endif %}
                   </td>
-                  <td>{{ '%.0f'|format(record.distance_m) }} m</td>
+                  <td>
+                    {% if record.image_status == 'POSSIBLE_VISUAL_MATCH' %}
+                      <span class="badge bg-success">Possible match</span>
+                    {% elif record.image_status == 'LOW_VISUAL_SIMILARITY' %}
+                      <span class="badge bg-warning text-dark">Low similarity</span>
+                    {% elif record.image_status %}
+                      <span class="badge bg-secondary">{{ record.image_status.replace('_', ' ').title() }}</span>
+                    {% else %}
+                      <span class="text-muted">&ndash;</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if record.review_decision %}
+                      <span class="badge bg-primary">Reviewed: {{ record.review_decision.replace('_', ' ').title() }}</span>
+                    {% elif record.final_decision == 'SUGGESTED_CAMPUS_MATCH' %}
+                      <span class="badge bg-info text-dark">Suggested match</span><br>
+                      <small class="text-muted">Awaiting review</small>
+                    {% else %}
+                      <span class="badge bg-light text-dark">Faculty review</span>
+                    {% endif %}
+                  </td>
                   <td>{{ record.captured_at.strftime('%Y-%m-%d %H:%M') }}</td>
                   <td>
                     {% if record.image_path %}
@@ -165,7 +230,7 @@
                   </td>
                 </tr>
               {% else %}
-                <tr><td colspan="5" class="text-center text-muted py-3">No verifications recorded yet.</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-3">No submissions recorded yet.</td></tr>
               {% endfor %}
             </tbody>
           </table>

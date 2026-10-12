@@ -123,13 +123,18 @@ def event_verifications(event_id):
         .order_by(GeoVerification.captured_at.desc())
         .all()
     )
-    matched = sum(1 for record in records if record.verdict == 'match')
+    matched = sum(1 for record in records if record.gps_status == 'LOCATION_MATCH')
+    inconclusive = sum(
+        1 for record in records if record.gps_status in {None, 'INCONCLUSIVE', 'MISSING'}
+    )
+    reviewed = sum(1 for record in records if record.review_decision)
     return render_template(
         'event_verifications.html',
         event=event,
         records=records,
         matched=matched,
-        unmatched=len(records) - matched,
+        inconclusive=inconclusive,
+        reviewed=reviewed,
     )
 
 

@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div>
+    <h2 class="mb-1 text-primary">Verification review queue</h2>
+    <p class="text-secondary mb-0">Location and photo evidence waiting for a human decision.</p>
+  </div>
+  <a href="{{ url_for('organizer.dashboard') if current_user.role == 'organizer' else url_for('admin.dashboard') }}" class="btn btn-outline-secondary">Back to dashboard</a>
+</div>
+
+<div class="alert alert-info border-0 shadow-sm" role="note">
+  These signals are <strong>indicative only</strong>. A location match is not proof that a student was on
+  campus, and a low photo similarity is not proof that they were not. Record a decision only after looking
+  at the evidence; never reject a student solely because of a model result.
+</div>
+
+{% for row in rows %}
+  {% set record = row.record %}
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+        <div>
+          <h3 class="h6 mb-1">
+            {{ record.user.name }}
+            <small class="text-muted">{{ record.user.email }}</small>
+          </h3>
+          <p class="text-secondary small mb-0">
+            {{ record.event.title }} &middot; submitted {{ record.captured_at.strftime('%Y-%m-%d %H:%M') }}
+            {%- if record.location_captured_at %} &middot; location captured {{ record.location_captured_at.strftime('%H:%M:%S') }}{% endif %}
+          </p>
+        </div>
+        {% if record.review_decision %}
+          <span class="badge bg-primary">
+            Reviewed: {{ record.review_decision.replace('_', ' ').title() }}
+            {%- if record.reviewer %} by {{ record.reviewer.name }}{% endif %}
+          </span>
+        {% else %}
+          <span class="badge bg-warning text-dark">Awaiting review</span>
+        {% endif %}
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="border rounded p-3 h-100">
+            <h4 class="h6 text-uppercase text-muted">Location evidence</h4>
+            <p class="mb-2">
+              {% if record.gps_status == 'LOCATION_MATCH' %}
+                <span class="badge bg-success">Location matched</span>
+              {% elif record.gps_status == 'LOCATION_MISMATCH' %}
+                <span class="badge bg-danger">Away from campus</span>
+              {% elif record.gps_status == 'MISSING' %}
+                <span class="badge bg-secondary">No location provided</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Inconclusive</span>
+              {% endif %}
+            </p>
+            <dl class="row small mb-0">
+              <dt class="col-6 text-muted">Distance from reference point</dt>
+              <dd class="col-6">{% if record.distance_m is not none %}{{ '%.0f'|format(record.distance_m) }} m{% else %}n/a{% endif %}</dd>
+              <dt class="col-6 text-muted">Accuracy</dt>
+              <dd class="col-6">{% if record.accuracy_m is not none %}{{ '%.0f'|format(record.accuracy_m) }} m{% else %}not reported{% endif %}</dd>
+              <dt class="col-6 text-muted">Coordinates</dt>
+              <dd class="col-6">
+                {% if row.show_exact_coordinates and record.latitude is not none %}
+                  {{ '%.5f'|format(row.latitude) }}, {{ '%.5f'|format(row.longitude) }}
+                {% elif record.latitude is not none %}
+                  ~{{ '%.2f'|format(row.latitude) }}, ~{{ '%.2f'|format(row.longitude) }} (masked)
+                {% else %}
+                  not provided
+                {% endif %}
+              </dd>
+              <dt class="col-6 text-muted">Note</dt>
+              <dd class="col-6">{{ record.gps_reason or '-' }}</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="border rounded p-3 h-100">
+            <h4 class="h6 text-uppercase text-muted">Photo evidence</h4>
+            <p class="mb-2">
+              {% if record.image_status == 'POSSIBLE_VISUAL_MATCH' %}
+                <span class="badge bg-success">Possible visual match</span>
+              {% elif record.image_status == 'LOW_VISUAL_SIMILARITY' %}
+                <span class="badge bg-warning text-dark">Low visual similarity</span>
+              {% elif record.image_status %}
+                <span class="badge bg-secondary">{{ record.image_status.replace('_', ' ').title() }}</span>
+              {% else %}
+                <span class="badge bg-secondary">Not assessed</span>
+              {% endif %}
+            </p>
+            <dl class="row small mb-2">
+              <dt class="col-6 text-muted">Closest reference</dt>
+              <dd class="col-6">{{ record.image_best_reference or 'none' }}</dd>
+              <dt class="col-6 text-muted">Similarity</dt>
+              <dd class="col-6">{% if record.image_similarity is not none %}{{ '%.3f'|format(record.image_similarity) }}{% else %}n/a{% endif %}</dd>
+              <dt class="col-6 text-muted">References used</dt>
+              <dd class="col-6">{{ record.image_reference_count if record.image_reference_count is not none else 0 }}</dd>
+            </dl>
+            {% if record.image_path %}
+              <a class="btn btn-outline-secondary btn-sm"
+                 href="{{ url_for('verification.verification_image', verification_id=record.id) }}"
+                 target="_blank" rel="noopener">View submitted photo</a>
+            {% else %}
+              <span class="text-muted small">No photo was submitted.</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-{{ 'warning' if record.decision_flags else 'light' }} border mt-3 mb-3 py-2">
+        <strong class="small">Model suggestion:</strong>
+        <span class="small">
+          {{ 'Suggested campus match' if record.final_decision == 'SUGGESTED_CAMPUS_MATCH' else 'Faculty review required' }}
+          {%- if record.decision_flags %} &middot; flags: {{ record.decision_flags.replace(',', ', ') }}{% endif %}
+        </span>
+        {% if record.decision_rationale %}
+          <div class="small text-muted mt-1">{{ record.decision_rationale }}</div>
+        {% endif %}
+      </div>
+
+      <form method="post" action="{{ url_for('verification.review_verification', verification_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="decision-{{ record.id }}">Your decision</label>
+            <select class="form-select form-select-sm" id="decision-{{ record.id }}" name="review_decision">
+              {% for value, label in review_decisions.items() %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small mb-1" for="note-{{ record.id }}">Note (optional)</label>
+            <input type="text" class="form-control form-control-sm" id="note-{{ record.id }}"
+                   name="review_note" maxlength="500" placeholder="Reason for this decision">
+          </div>
+          <div class="col-md-3">
+            <button type="submit" class="btn btn-primary btn-sm w-100">Record decision</button>
+          </div>
+        </div>
+        {% if record.review_note %}
+          <small class="text-muted d-block mt-2">Previous note: {{ record.review_note }}</small>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+{% else %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-body text-center text-muted py-5">
+      No verifications are waiting for review.
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}

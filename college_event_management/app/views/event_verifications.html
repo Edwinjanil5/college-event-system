@@ -5,26 +5,40 @@
     <h2 class="mb-1 text-primary">Attendance verification</h2>
     <p class="text-secondary mb-0">{{ event.title }} &middot; {{ event.venue }}</p>
   </div>
-  <a href="{{ url_for('organizer.dashboard') }}" class="btn btn-outline-secondary">Back to dashboard</a>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('verification.review_queue') }}" class="btn btn-outline-primary">Open review queue</a>
+    <a href="{{ url_for('organizer.dashboard') }}" class="btn btn-outline-secondary">Back to dashboard</a>
+  </div>
+</div>
+
+<div class="alert alert-info border-0 shadow-sm" role="note">
+  Location and photo results are indicative signals, not proof of physical presence. Record your decision in
+  the review queue; never reject a student purely because of a model result.
 </div>
 
 <div class="row g-4 mb-4">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card shadow-sm border-0"><div class="card-body">
-      <h6 class="text-muted text-uppercase">Verifications recorded</h6>
+      <h6 class="text-muted text-uppercase">Submissions</h6>
       <h3>{{ records|length }}</h3>
     </div></div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card shadow-sm border-0"><div class="card-body">
-      <h6 class="text-muted text-uppercase">Matched campus location</h6>
+      <h6 class="text-muted text-uppercase">Location matched</h6>
       <h3>{{ matched }}</h3>
     </div></div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card shadow-sm border-0"><div class="card-body">
-      <h6 class="text-muted text-uppercase">Mismatch</h6>
-      <h3>{{ unmatched }}</h3>
+      <h6 class="text-muted text-uppercase">Inconclusive</h6>
+      <h3>{{ inconclusive }}</h3>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm border-0"><div class="card-body">
+      <h6 class="text-muted text-uppercase">Reviewed</h6>
+      <h3>{{ reviewed }}</h3>
     </div></div>
   </div>
 </div>
@@ -36,12 +50,12 @@
         <thead class="table-primary">
           <tr>
             <th>Student</th>
-            <th>Verdict</th>
-            <th>Distance</th>
-            <th>Probability</th>
-            <th>Source</th>
-            <th>Captured</th>
+            <th>Location</th>
             <th>Photo</th>
+            <th>Outcome</th>
+            <th>Submitted</th>
+            <th>Review</th>
+            <th>File</th>
           </tr>
         </thead>
         <tbody>
@@ -52,20 +66,51 @@
                 <small class="d-block text-muted">{{ record.user.email }}</small>
               </td>
               <td>
-                {% if record.verdict == 'match' %}
+                {% if record.gps_status == 'LOCATION_MATCH' %}
                   <span class="badge bg-success">Match</span>
-                {% else %}
+                {% elif record.gps_status == 'LOCATION_MISMATCH' %}
                   <span class="badge bg-danger">Mismatch</span>
+                {% elif record.gps_status == 'MISSING' %}
+                  <span class="badge bg-secondary">Not provided</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Inconclusive</span>
+                {% endif %}
+                {% if record.distance_m is not none %}
+                  <small class="d-block text-muted">{{ '%.0f'|format(record.distance_m) }} m</small>
                 {% endif %}
               </td>
-              <td>{{ '%.0f'|format(record.distance_m) }} m</td>
-              <td>{{ (record.match_probability * 100)|round(1) }}%</td>
               <td>
-                <span class="badge bg-secondary">
-                  {{ 'Random shot' if record.source == 'random_shot' else 'Device GPS' }}
-                </span>
+                {% if record.image_status == 'POSSIBLE_VISUAL_MATCH' %}
+                  <span class="badge bg-success">Possible match</span>
+                {% elif record.image_status == 'LOW_VISUAL_SIMILARITY' %}
+                  <span class="badge bg-warning text-dark">Low similarity</span>
+                {% elif record.image_status %}
+                  <span class="badge bg-secondary">{{ record.image_status.replace('_', ' ').title() }}</span>
+                {% else %}
+                  <span class="text-muted">&ndash;</span>
+                {% endif %}
+                {% if record.image_similarity is not none %}
+                  <small class="d-block text-muted">{{ '%.3f'|format(record.image_similarity) }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {% if record.final_decision == 'SUGGESTED_CAMPUS_MATCH' %}
+                  <span class="badge bg-info text-dark">Suggested match</span>
+                {% else %}
+                  <span class="badge bg-primary">Faculty review</span>
+                {% endif %}
+                {% if record.decision_flags %}
+                  <small class="d-block text-warning">{{ record.decision_flags.replace(',', ', ') }}</small>
+                {% endif %}
               </td>
               <td>{{ record.captured_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>
+                {% if record.review_decision %}
+                  <span class="badge bg-primary">{{ record.review_decision.replace('_', ' ').title() }}</span>
+                {% else %}
+                  <span class="text-muted small">Pending</span>
+                {% endif %}
+              </td>
               <td>
                 {% if record.image_path %}
                   <a href="{{ url_for('verification.verification_image', verification_id=record.id) }}" target="_blank" rel="noopener">View</a>
@@ -75,7 +120,7 @@
               </td>
             </tr>
           {% else %}
-            <tr><td colspan="7" class="text-center text-muted py-4">No students have submitted a location verification for this event yet.</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-4">No students have submitted a verification for this event yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -83,6 +128,7 @@
   </div>
 </div>
 <p class="small text-muted mt-3 mb-0">
-  Photos are private attendance evidence and are visible only to the student and the organizer of this event.
+  Photos are private attendance evidence, visible only to the student and authorised reviewers of this event.
+  Records are deleted automatically after the configured retention period.
 </p>
 {% endblock %}

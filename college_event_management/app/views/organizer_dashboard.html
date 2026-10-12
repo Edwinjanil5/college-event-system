@@ -8,6 +8,7 @@
       {{ 'Class teacher' if current_user.is_class_incharge else 'Regular organizer' }}
     </span>
   </div>
+  <a href="{{ url_for('verification.review_queue') }}" class="btn btn-outline-primary">Verification review queue</a>
   <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newEventModal">Add Event</button>
 </div>
 

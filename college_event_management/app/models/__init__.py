@@ -110,11 +110,11 @@ class GeoVerification(db.Model):
         default='device',
         server_default='device',
     )
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     accuracy_m = db.Column(db.Float, nullable=True)
-    distance_m = db.Column(db.Float, nullable=False)
-    match_probability = db.Column(db.Float, nullable=False)
+    distance_m = db.Column(db.Float, nullable=True)
+    match_probability = db.Column(db.Float, nullable=True)
     verdict = db.Column(
         db.Enum('match', 'mismatch', name='verification_verdict'),
         nullable=False,
@@ -125,6 +125,32 @@ class GeoVerification(db.Model):
     campus_longitude = db.Column(db.Float, nullable=False)
     image_path = db.Column(db.String(255), nullable=True)
     captured_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+
+    # --- GPS outcome (authoritative for location) ------------------------
+    gps_status = db.Column(db.String(32), nullable=True)
+    gps_reason = db.Column(db.String(255), nullable=True)
+    gps_boundary_source = db.Column(db.String(16), nullable=True)
+    location_captured_at = db.Column(db.DateTime, nullable=True)
+    verified_at = db.Column(db.DateTime, default=utc_now, nullable=True)
+
+    # --- Image comparison outcome (indicative only) ----------------------
+    image_status = db.Column(db.String(32), nullable=True)
+    image_similarity = db.Column(db.Float, nullable=True)
+    image_best_reference = db.Column(db.String(255), nullable=True)
+    image_backend = db.Column(db.String(32), nullable=True)
+    image_model_version = db.Column(db.String(64), nullable=True)
+    image_reference_count = db.Column(db.Integer, nullable=True)
+
+    # --- Combined decision -----------------------------------------------
+    final_decision = db.Column(db.String(32), nullable=True)
+    decision_flags = db.Column(db.String(500), nullable=True)
+    decision_rationale = db.Column(db.Text, nullable=True)
+
+    # --- Human review, kept separate from model suggestions --------------
+    reviewed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    review_decision = db.Column(db.String(32), nullable=True)
+    review_note = db.Column(db.String(500), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint('user_id', 'event_id', name='uq_user_event_geo_verification'),
@@ -138,6 +164,11 @@ class GeoVerification(db.Model):
         'User',
         foreign_keys=[user_id],
         backref=db.backref('geo_verifications', lazy=True),
+    )
+    reviewer = db.relationship(
+        'User',
+        foreign_keys=[reviewed_by_id],
+        backref=db.backref('reviewed_verifications', lazy=True),
     )
     event = db.relationship(
         'Event',

@@ -47,6 +47,9 @@
               {% elif current_user.role == 'hod' %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('hod.dashboard') }}">HoD Dashboard</a></li>
               {% endif %}
+              {% if current_user.role in ['organizer', 'hod', 'admin'] %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('verification.review_queue') }}">Verifications</a></li>
+              {% endif %}
               <li class="nav-item">
                 <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

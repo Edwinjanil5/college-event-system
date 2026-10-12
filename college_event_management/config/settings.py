@@ -76,17 +76,46 @@ class Config:
     SUPPORT_PHONE = os.getenv('SUPPORT_PHONE', '8138815144')
     GOOGLE_SITE_VERIFICATION = os.getenv('GOOGLE_SITE_VERIFICATION', '')
 
-    # Constant reference geolocation used by the geolocation cross-match model.
-    CAMPUS_NAME = os.getenv('CAMPUS_NAME', 'College of Applied Science, Adoor')
+    # ------------------------------------------------------------------
+    # Campus reference geolocation (constant)
+    # Coordinates supplied by the college. These anchor every distance
+    # calculation; they do not by themselves define the campus boundary.
+    # ------------------------------------------------------------------
+    CAMPUS_NAME = os.getenv('CAMPUS_NAME', 'College of Applied Sciences, Adoor (IHRD)')
     CAMPUS_ADDRESS = os.getenv(
         'CAMPUS_ADDRESS',
-        'Parthasarathy Road, Kannamkode, Adoor, Pathanamthitta, Kerala 691523',
+        'Hospital, Link Road, Parass La, Adoor, Kerala, India - 691523',
     )
-    CAMPUS_LATITUDE = float(os.getenv('CAMPUS_LATITUDE', '9.1553906'))
-    CAMPUS_LONGITUDE = float(os.getenv('CAMPUS_LONGITUDE', '76.7310322'))
+    CAMPUS_LATITUDE = float(os.getenv('CAMPUS_LATITUDE', '9.1557'))
+    CAMPUS_LONGITUDE = float(os.getenv('CAMPUS_LONGITUDE', '76.7369'))
     CAMPUS_RADIUS_M = float(os.getenv('CAMPUS_RADIUS_M', '250'))
-    GEO_MATCH_THRESHOLD = float(os.getenv('GEO_MATCH_THRESHOLD', '0.5'))
-    GEO_MODEL_FOLDER = os.getenv('GEO_MODEL_FOLDER') or _writable_folder('data')
+
+    # Optional verified campus boundary (GeoJSON Polygon). When this file
+    # exists and parses, the polygon replaces the circular-radius check.
+    CAMPUS_POLYGON_FILE = os.getenv('CAMPUS_POLYGON_FILE') or ''
+
+    # A GPS reading coarser than this cannot support a conclusive verdict.
+    GPS_MAX_RELIABLE_ACCURACY_M = float(os.getenv('GPS_MAX_RELIABLE_ACCURACY_M', '100'))
+
+    # Starting similarity threshold for the visual comparison. This is NOT a
+    # validated decision boundary: it is an indicative cut-off that a
+    # deployment should calibrate against real campus photographs.
+    IMAGE_SIMILARITY_THRESHOLD = float(os.getenv('IMAGE_SIMILARITY_THRESHOLD', '0.92'))
+    REFERENCE_IMAGE_FOLDER = os.getenv(
+        'REFERENCE_IMAGE_FOLDER'
+    ) or os.path.join(BASE_DIR, 'reference_images')
+    REFERENCE_IMAGE_CACHE_FILE = os.getenv(
+        'REFERENCE_IMAGE_CACHE_FILE'
+    ) or os.path.join(_writable_folder('data'), 'reference_embeddings.json')
+    # 'perceptual' (default, Pillow only) or 'clip' (optional PyTorch backend).
+    IMAGE_EMBEDDING_BACKEND = os.getenv('IMAGE_EMBEDDING_BACKEND', 'perceptual')
+    MAX_REFERENCE_IMAGE_BYTES = int(
+        os.getenv('MAX_REFERENCE_IMAGE_BYTES', str(10 * 1024 * 1024))
+    )
+
+    # Location data is sensitive: records and their photos expire.
+    VERIFICATION_RETENTION_DAYS = int(os.getenv('VERIFICATION_RETENTION_DAYS', '180'))
+
     MAX_VERIFICATION_IMAGE_BYTES = int(
         os.getenv('MAX_VERIFICATION_IMAGE_BYTES', str(400 * 1024))
     )

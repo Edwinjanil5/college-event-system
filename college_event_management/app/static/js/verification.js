@@ -31,14 +31,20 @@
     candidateSource: document.getElementById('candidateSource'),
     check: document.getElementById('checkBtn'),
     resultStatus: document.getElementById('resultStatus'),
+    resultLoading: document.getElementById('resultLoading'),
     resultPanel: document.getElementById('resultPanel'),
-    verdictBadge: document.getElementById('verdictBadge'),
-    probabilityBar: document.getElementById('probabilityBar'),
-    resultDistance: document.getElementById('resultDistance'),
-    resultProbability: document.getElementById('resultProbability'),
-    resultCampus: document.getElementById('resultCampus'),
-    resultModel: document.getElementById('resultModel'),
-    resultSimulated: document.getElementById('resultSimulated')
+    gpsBadge: document.getElementById('gpsBadge'),
+    gpsDistance: document.getElementById('gpsDistance'),
+    gpsAccuracy: document.getElementById('gpsAccuracy'),
+    gpsReason: document.getElementById('gpsReason'),
+    imageBadge: document.getElementById('imageBadge'),
+    imageReference: document.getElementById('imageReference'),
+    imageSimilarity: document.getElementById('imageSimilarity'),
+    imageCount: document.getElementById('imageCount'),
+    imageReason: document.getElementById('imageReason'),
+    decisionBadge: document.getElementById('decisionBadge'),
+    decisionRationale: document.getElementById('decisionRationale'),
+    decisionMessage: document.getElementById('decisionMessage')
   };
 
   if (!eventId || !els.check) {
@@ -48,6 +54,7 @@
   var stream = null;
   var photoDataUrl = null;
   var candidate = null;
+  var submitted = false;
 
   function setCameraStatus(message) {
     els.cameraStatus.textContent = message;
@@ -136,7 +143,7 @@
   }
 
   function showCandidate(point, source) {
-    candidate = { point: point, source: source };
+    candidate = { point: point, source: source, capturedAt: new Date().toISOString() };
     els.locationDetails.hidden = false;
     els.candidateLat.textContent = Number(point.latitude).toFixed(6);
     els.candidateLng.textContent = Number(point.longitude).toFixed(6);
@@ -144,8 +151,8 @@
     els.candidateSource.textContent = source === 'random_shot' ? 'Random shot (demo)' : 'Device GPS';
     els.check.disabled = false;
     els.locationStatus.textContent = source === 'random_shot'
-      ? 'Random geolocation generated. Run the comparison to see the model verdict.'
-      : 'Current location captured. Run the comparison to cross-match it with the campus.';
+      ? 'Random geolocation generated. Run the verification to see the model verdict.'
+      : 'Current location captured. Run the verification to cross-match it with the campus.';
   }
 
   function useCurrentLocation() {
@@ -202,15 +209,18 @@
   }
 
   function runComparison() {
-    if (!candidate) { return; }
+    if (!candidate || submitted) { return; }
+    submitted = true;
     els.check.disabled = true;
-    els.resultStatus.textContent = 'Comparing the two geolocations...';
+    els.resultLoading.classList.remove('d-none');
+    els.resultStatus.textContent = 'Submitting your location and photo for verification...';
 
     var payload = {
       latitude: candidate.point.latitude,
       longitude: candidate.point.longitude,
       accuracy: candidate.point.accuracy_m,
       source: candidate.source,
+      captured_at: candidate.capturedAt,
       image: photoDataUrl
     };
 
@@ -220,37 +230,84 @@
       credentials: 'same-origin',
       body: JSON.stringify(payload)
     })
-      .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          return { ok: response.ok, data: data };
+        });
+      })
       .then(function (result) {
-        els.check.disabled = false;
+        els.resultLoading.classList.add('d-none');
         if (!result.ok) {
-          els.resultStatus.textContent = result.data.error || 'The comparison could not be completed.';
+          // The submission never reached the server, so a retry is safe.
+          submitted = false;
+          els.check.disabled = false;
+          els.resultStatus.textContent = result.data.error || 'The verification could not be completed.';
           return;
         }
         renderResult(result.data);
       })
       .catch(function () {
+        els.resultLoading.classList.add('d-none');
+        // The captured photo is deliberately kept so nothing is lost.
+        submitted = false;
         els.check.disabled = false;
-        els.resultStatus.textContent = 'The comparison could not be completed.';
+        els.resultStatus.textContent =
+          'The network request failed. Your photo is still here - press Run verification to try again.';
       });
   }
 
+  var GPS_STYLES = {
+    LOCATION_MATCH: ['Location matched', 'bg-success'],
+    LOCATION_MISMATCH: ['Away from campus', 'bg-danger'],
+    INCONCLUSIVE: ['Inconclusive', 'bg-warning text-dark'],
+    MISSING: ['No location provided', 'bg-secondary']
+  };
+
+  var IMAGE_STYLES = {
+    POSSIBLE_VISUAL_MATCH: ['Possible visual match', 'bg-success'],
+    LOW_VISUAL_SIMILARITY: ['Low visual similarity', 'bg-warning text-dark'],
+    INCONCLUSIVE: ['Inconclusive', 'bg-secondary'],
+    REFERENCE_IMAGES_UNAVAILABLE: ['No reference images', 'bg-secondary'],
+    MODEL_UNAVAILABLE: ['Comparison unavailable', 'bg-secondary'],
+    INVALID_IMAGE: ['Image not readable', 'bg-danger']
+  };
+
+  function applyBadge(element, styles, key, fallbackLabel) {
+    var entry = styles[key];
+    element.textContent = entry ? entry[0] : (key ? key.replace(/_/g, ' ').toLowerCase() : fallbackLabel);
+    element.className = 'badge fs-6 ' + (entry ? entry[1] : 'bg-secondary');
+  }
+
   function renderResult(data) {
-    els.resultStatus.textContent = 'Comparison complete.';
+    var gps = data.gps_verification || {};
+    var image = data.image_verification || {};
+
+    els.resultStatus.textContent = 'Verification complete.';
     els.resultPanel.hidden = false;
-    els.verdictBadge.textContent = data.verdict === 'match' ? 'Location matched' : 'Location mismatch';
-    els.verdictBadge.className = 'badge fs-6 ' + (data.verdict === 'match' ? 'bg-success' : 'bg-danger');
 
-    var percent = Math.round((data.probability || 0) * 100);
-    els.probabilityBar.style.width = percent + '%';
-    els.probabilityBar.textContent = percent + '%';
-    els.probabilityBar.className = 'progress-bar ' + (data.verdict === 'match' ? 'bg-success' : 'bg-danger');
+    applyBadge(els.gpsBadge, GPS_STYLES, gps.status, 'unknown');
+    els.gpsDistance.textContent = gps.distance_meters != null
+      ? Number(gps.distance_meters).toLocaleString() + ' m' : 'not available';
+    els.gpsAccuracy.textContent = gps.accuracy_meters != null
+      ? Number(gps.accuracy_meters).toLocaleString() + ' m' : 'not reported';
+    els.gpsReason.textContent = gps.reason || 'The reading was precise enough to compare.';
 
-    els.resultDistance.textContent = Number(data.distance_m).toLocaleString() + ' m';
-    els.resultProbability.textContent = percent + '%';
-    els.resultCampus.textContent = data.campus.name + ' (' + data.campus.latitude.toFixed(5) + ', ' + data.campus.longitude.toFixed(5) + ')';
-    els.resultModel.textContent = data.model.version + ' - accuracy ' + data.model.accuracy + '%';
-    els.resultSimulated.textContent = data.source === 'random_shot' ? 'Yes (random shot)' : 'No (device GPS)';
+    applyBadge(els.imageBadge, IMAGE_STYLES, image.status, 'unknown');
+    els.imageReference.textContent = image.best_reference || 'none';
+    els.imageSimilarity.textContent = image.similarity != null
+      ? Number(image.similarity).toFixed(3) : 'not available';
+    els.imageCount.textContent = image.reference_count != null ? image.reference_count : 0;
+    els.imageReason.textContent = image.reason || 'The photo was compared with the campus references.';
+
+    var suggested = data.final_decision === 'SUGGESTED_CAMPUS_MATCH';
+    els.decisionBadge.textContent = suggested ? 'Suggested campus match' : 'Faculty review';
+    els.decisionBadge.className = 'badge fs-6 ' + (suggested ? 'bg-info text-dark' : 'bg-primary');
+    els.decisionRationale.textContent = data.rationale || '';
+    els.decisionMessage.textContent = data.message ||
+      'Your submission was recorded and sent for faculty review.';
+
+    // Prevent an accidental duplicate submission of the same evidence.
+    els.check.disabled = true;
   }
 
   els.startCamera.addEventListener('click', startCamera);
