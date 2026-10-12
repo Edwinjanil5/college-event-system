@@ -436,8 +436,11 @@ def check_location(event_id):
     try:
         db.session.commit()
     except IntegrityError:
+        # Upserting on (user, event) means a genuine duplicate should not
+        # occur, so log the real cause instead of reporting a misleading one.
         db.session.rollback()
-        return jsonify({'error': 'A verification already exists for this event.'}), 409
+        current_app.logger.exception('Could not store verification record')
+        return jsonify({'error': 'The verification could not be stored. Please try again.'}), 409
 
     if previous_image and previous_image != record.image_path:
         _remove_image(previous_image)
@@ -572,4 +575,6 @@ def review_verification(verification_id):
         decision,
     )
     flash(f'Review recorded: {REVIEW_DECISIONS[decision]}.', 'success')
-    return redirect(request.referrer or url_for('verification.review_queue'))
+    # Always return to the review queue. Redirecting back to the referring URL
+    # is fragile: it may point at a POST-only endpoint.
+    return redirect(url_for('verification.review_queue'))

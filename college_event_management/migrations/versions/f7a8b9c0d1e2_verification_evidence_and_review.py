@@ -79,6 +79,7 @@ def upgrade():
         # coordinates become optional rather than fabricating a value.
         batch.alter_column('latitude', existing_type=sa.Float(), nullable=True)
         batch.alter_column('longitude', existing_type=sa.Float(), nullable=True)
+        batch.alter_column('distance_m', existing_type=sa.Float(), nullable=True)
         batch.alter_column('match_probability', existing_type=sa.Float(), nullable=True)
 
     # Backfill: rows written before this migration used the legacy model
@@ -105,6 +106,7 @@ def downgrade():
         batch.drop_constraint('fk_geo_verifications_reviewer', type_='foreignkey')
         batch.alter_column('latitude', existing_type=sa.Float(), nullable=False)
         batch.alter_column('longitude', existing_type=sa.Float(), nullable=False)
+        batch.alter_column('distance_m', existing_type=sa.Float(), nullable=False)
         batch.alter_column('match_probability', existing_type=sa.Float(), nullable=False)
     for column in (
         'reviewed_at',

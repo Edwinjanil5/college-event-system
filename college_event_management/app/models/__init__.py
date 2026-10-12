@@ -113,6 +113,7 @@ class GeoVerification(db.Model):
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
     accuracy_m = db.Column(db.Float, nullable=True)
+    # A missing or invalid location has no distance or probability to record.
     distance_m = db.Column(db.Float, nullable=True)
     match_probability = db.Column(db.Float, nullable=True)
     verdict = db.Column(
